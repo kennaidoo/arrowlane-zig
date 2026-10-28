@@ -69,6 +69,16 @@ The one-field IPC spike is separate:
 Python reads the raw stream with `pyarrow.ipc.open_stream` and the frame with
 `arrowlane.unpack`.
 
+## JSON chunks
+
+```bash
+./zig-out/bin/arrowlane-zig pack-chunks --rows 1000 --chunk-rows 250 --out chunks.aln
+./zig-out/bin/arrowlane-zig unpack-chunks --in chunks.aln --json
+```
+
+The result is four ordered frames. Python `read_chunks` returns four 250-row
+batches and `write_chunks` produces a stream Zig accepts.
+
 ## Gate
 
 ```bash

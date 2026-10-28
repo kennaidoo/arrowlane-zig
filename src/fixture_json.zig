@@ -29,7 +29,18 @@ fn appendText(list: *std.ArrayList(u8), allocator: std.mem.Allocator, text: []co
 }
 
 pub fn encodeSample(allocator: std.mem.Allocator, rows: usize) Error![]u8 {
-    const header = std.fmt.allocPrint(
+    return encodeRange(allocator, 0, rows, null);
+}
+
+pub fn encodeRange(allocator: std.mem.Allocator, start: usize, rows: usize, chunk: ?frame.ChunkInfo) Error![]u8 {
+    const header = if (chunk) |info| blk: {
+        info.validate() catch return error.BadFrame;
+        break :blk std.fmt.allocPrint(
+            allocator,
+            "{{\"chunk\":{{\"id\":\"{s}\",\"index\":{d},\"last\":{s}}},\"media_type\":\"application/x-ndjson\",\"ncols\":8,\"producer\":\"{s}\",\"schema\":\"{s}\"}}",
+            .{ info.id, info.index, if (info.last) "true" else "false", producer, fixture_schema.schema_b64 },
+        ) catch return error.OutOfMemory;
+    } else std.fmt.allocPrint(
         allocator,
         "{{\"media_type\":\"application/x-ndjson\",\"ncols\":8,\"producer\":\"{s}\",\"schema\":\"{s}\"}}",
         .{ producer, fixture_schema.schema_b64 },
@@ -39,23 +50,24 @@ pub fn encodeSample(allocator: std.mem.Allocator, rows: usize) Error![]u8 {
     var payload: std.ArrayList(u8) = .empty;
     defer payload.deinit(allocator);
     for (0..rows) |index| {
+        const absolute = start + index;
         if (index > 0) try appendText(&payload, allocator, "\n");
-        const name = if (index % 7 == 0)
+        const name = if (absolute % 7 == 0)
             allocator.dupe(u8, "null") catch return error.OutOfMemory
         else
-            std.fmt.allocPrint(allocator, "\"row-{d}\"", .{index}) catch return error.OutOfMemory;
+            std.fmt.allocPrint(allocator, "\"row-{d}\"", .{absolute}) catch return error.OutOfMemory;
         defer allocator.free(name);
         const day = std.fmt.allocPrint(
             allocator,
             "\"2026-01-{d:0>2}\"",
-            .{index % 28 + 1},
+            .{absolute % 28 + 1},
         ) catch return error.OutOfMemory;
         defer allocator.free(day);
-        const score = @as(f64, @floatFromInt(index)) / 3.0;
+        const score = @as(f64, @floatFromInt(absolute)) / 3.0;
         const row = std.fmt.allocPrint(
             allocator,
             "{{\"id\":{d},\"name\":{s},\"score\":{d},\"ok\":{s},\"day\":{{\"$\":\"date\",\"v\":{s}}},\"amount\":{{\"$\":\"dec\",\"v\":\"12.34\"}},\"ts\":{{\"$\":\"ts\",\"v\":\"2026-10-28T12:00:00+00:00\"}},\"blob\":{{\"$\":\"bin\",\"v\":\"AAEC\"}}}}",
-            .{ index, name, score, if (index % 2 == 0) "true" else "false", day },
+            .{ absolute, name, score, if (absolute % 2 == 0) "true" else "false", day },
         ) catch return error.OutOfMemory;
         defer allocator.free(row);
         try appendText(&payload, allocator, row);

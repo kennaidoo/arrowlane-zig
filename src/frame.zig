@@ -137,6 +137,21 @@ fn checkOptions(options: EncodeOptions) Error!void {
     if (options.max_uncompressed > MAX_UNCOMPRESSED_BYTES) return error.UncompressedTooLarge;
 }
 
+/// Return the exact byte span of one frame in `data`, without decoding it.
+pub fn span(data: []const u8) Error!usize {
+    if (data.len < HEADER_SIZE) return error.Truncated;
+    if (!std.mem.eql(u8, data[0..4], MAGIC)) return error.BadMagic;
+    if (data[4] != VERSION) return error.UnsupportedVersion;
+    if (laneName(data[5]) == null) return error.UnknownLane;
+    const payload_len_u64 = getU64(data[8..16]);
+    if (payload_len_u64 > MAX_PAYLOAD_BYTES) return error.PayloadTooLarge;
+    const header_len = getU16(data[36..38]);
+    const payload_len: usize = std.math.cast(usize, payload_len_u64) orelse return error.PayloadTooLarge;
+    const expected = std.math.add(usize, HEADER_SIZE + @as(usize, header_len), payload_len) catch return error.Truncated;
+    if (data.len < expected) return error.Truncated;
+    return expected;
+}
+
 /// Encode one frame. The returned buffer is owned by the caller.
 pub fn encode(allocator: std.mem.Allocator, frame: Frame, options: EncodeOptions) Error![]u8 {
     try checkOptions(options);

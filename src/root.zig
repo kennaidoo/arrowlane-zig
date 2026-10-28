@@ -1,6 +1,7 @@
 //! Public ArrowLane Zig API.
 
 pub const base64 = @import("base64.zig");
+pub const chunks = @import("chunks.zig");
 pub const costmodel = @import("costmodel.zig");
 pub const frame = @import("frame.zig");
 pub const fixture_json = @import("fixture_json.zig");

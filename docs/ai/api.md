@@ -111,7 +111,25 @@ Python reads the Zig IPC fixture at 14, 500, 20,000 and 200,000 rows with every
 column equal. Zig reads Python IPC frames at 500 and 20,000 rows. This is a
 fixture-scoped lane, not a general IPC codec.
 
+## Chunk stream
+
+`arrowlane.chunks.pack(allocator, rows, chunk_rows) ![]u8`
+
+Split the canonical JSON fixture into sequential frames. Each frame carries
+`chunk.id`, `chunk.index` and `chunk.last`. The stream id is 32 lowercase hex
+characters. Rows default to 50,000 per chunk in the Python package; this build
+requires the caller to pass `chunk_rows`.
+
+`arrowlane.chunks.validate(allocator, data) !Summary`
+
+Validate every frame, the stream id, the index sequence, the last marker and
+each fixture row. It returns the total row count and chunk count.
+
+Python `read_chunks` yields four 250-row batches from the 1,000 row Zig stream;
+Zig validates the Python `write_chunks` stream. This is a JSON fixture stream,
+not a general chunk codec.
+
 ## Not implemented
 
-The general JSON lane, general IPC lane, chunk stream, zstd, shared memory and C
-ABI are not in this build. The `describe` manifest reports them as false.
+The general JSON lane, general IPC lane, IPC chunk stream, zstd, shared memory
+and C ABI are not in this build. The `describe` manifest reports them as false.
