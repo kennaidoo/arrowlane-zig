@@ -2,7 +2,7 @@ const std = @import("std");
 const arrowlane = @import("arrowlane");
 
 const MANIFEST =
-    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture","json":"fixture","ipc":"fixture","ipc_zstd":"fixture","shm":false,"chunks":"fixture","c_abi":true}}
+    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"general","json":"fixture","ipc":"fixture","ipc_zstd":"fixture","shm":false,"chunks":"fixture","c_abi":true}}
 ;
 
 fn usage() void {
@@ -27,6 +27,7 @@ fn usage() void {
         \\         [--lane json|ipc|ipc-zstd]
         \\  unpack-chunks --in FILE [--json]                validate chunks
         \\  schema-int64 [--nullable]  write the int64 schema spike to stdout
+        \\  schema-general-fixture     write the general eight-field schema to stdout
         \\  version                   print the version
         \\
     , .{});
@@ -109,6 +110,23 @@ pub fn main(init: std.process.Init) !void {
         const raw = try arrowlane.schema.encodeInt64(init.gpa, nullable);
         defer init.gpa.free(raw);
         try writer.writeAll(raw);
+        try writer.flush();
+        return;
+    }
+
+    if (std.mem.eql(u8, command, "schema-general-int64")) {
+        const one = arrowlane.schema_general.Schema{ .fields = &.{
+            .{ .name = "a", .nullable = false, .data_type = .{ .int = .{ .bit_width = 64, .is_signed = true } } },
+        } };
+        const encoded = try arrowlane.schema_general.encode(init.arena.allocator(), one);
+        try writer.writeAll(encoded);
+        try writer.flush();
+        return;
+    }
+
+    if (std.mem.eql(u8, command, "schema-general-fixture")) {
+        const encoded = try arrowlane.schema_general.encode(init.arena.allocator(), arrowlane.schema_general.fixture_schema);
+        try writer.writeAll(encoded);
         try writer.flush();
         return;
     }

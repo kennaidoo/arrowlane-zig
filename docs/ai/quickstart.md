@@ -29,15 +29,18 @@ The manifest prints the implemented capabilities. Every unimplemented field is
 The response names the chosen lane, the reason, the predicted latency, the
 predicted wire bytes, every score and every rejected lane.
 
-## Emit the int64 schema spike
+## Emit schema messages
 
 ```bash
 ./zig-out/bin/arrowlane-zig schema-int64 > schema.bin
 ./zig-out/bin/arrowlane-zig schema-int64 --nullable > schema-nullable.bin
+./zig-out/bin/arrowlane-zig schema-general-fixture > schema-general.bin
+./zig-out/bin/arrowlane-zig schema-general-int64 > schema-general-int64.bin
 ```
 
-Both files are 128 byte encapsulated Arrow schema messages. They are the only
-schema messages this build supports for the one-column path.
+The int64 files are the pinned 128-byte variants. The general files use the
+forward schema writer and pyarrow reads both of them. The record-batch lanes
+still accept only the canonical eight-column fixture.
 
 ## Fixture JSON frame
 

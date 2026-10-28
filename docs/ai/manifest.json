@@ -29,14 +29,15 @@
     "parity_result": "pass"
   },
   "schema": {
-    "implemented": "fixture",
+    "implemented": "general",
     "nullable_variants": true,
     "fixture_schema_bytes": 480,
-    "general_arrow_schema": false
+    "common_types": ["int", "floating", "binary", "utf8", "bool", "decimal", "date", "timestamp"],
+    "general_arrow_schema": true
   },
   "c_abi": true,
   "platforms": {
-    "windows": "frame, fixture lanes, chunks, selector and C ABI tested",
+    "windows": "frame, general schema, fixture lanes, chunks, selector and C ABI tested",
     "linux": "not tested",
     "macos": "not tested"
   }

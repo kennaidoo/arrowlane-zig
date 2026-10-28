@@ -159,7 +159,16 @@ archive is `zig-out/lib/arrowlane_zig_static.lib`. `interop/check_zig_ffi.py`
 uses ctypes with `c_void_p` for pointers and checks version, select, inspect on
 all three lanes, repack to IPC and ipc-zstd, and safe frees.
 
+## General schema
+
+`src/schema_general.zig` reads and writes Arrow Schema flatbuffers for `int`,
+`floating`, `binary`, `utf8`, `bool`, `decimal`, `date` and `timestamp`.
+`zig-out/bin/arrowlane-zig schema-general-fixture` emits the canonical
+eight-field schema, and `schema-general-int64` emits a one-field non-nullable
+schema. `interop/check_zig_schema.py` checks both outputs with pyarrow.
+
 ## Not implemented
 
 The general JSON lane, general IPC lane and shared memory are not in this build.
-The `describe` manifest reports them as false.
+The record-batch codec is fixture scoped. The `describe` manifest reports those
+capabilities honestly.

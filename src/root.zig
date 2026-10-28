@@ -10,6 +10,7 @@ pub const ipc_zstd = @import("ipc_zstd.zig");
 pub const ipc_int64 = @import("ipc_int64.zig");
 pub const json_int64 = @import("json_int64.zig");
 pub const schema = @import("schema.zig");
+pub const schema_general = @import("schema_general.zig");
 pub const select = @import("select.zig");
 
 pub const VERSION = "0.1.0";

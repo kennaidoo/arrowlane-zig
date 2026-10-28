@@ -12,9 +12,9 @@
 
 ## Current boundary
 
-Implemented: frame encode/decode, int64 schema spike, canonical eight-column
-JSON, IPC and ipc-zstd fixtures, one-field int64 IPC spike, fixture chunk
-streams, selector, C ABI, `describe`.
+Implemented: frame encode/decode, general schema reader/writer for common
+types, canonical eight-column JSON, IPC and ipc-zstd fixtures, one-field int64
+IPC spike, fixture chunk streams, selector, C ABI, `describe`.
 
 Not implemented: general JSON lane, general IPC lane, shared memory.
 

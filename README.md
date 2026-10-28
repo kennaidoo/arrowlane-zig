@@ -2,12 +2,12 @@
 
 A pure Zig implementation of the arrowlane frame and lane selector.
 
-Status: first build. The frame codec, the int64 schema spike, the canonical
-eight-column JSON fixture, the one-field IPC spike, the eight-column IPC fixture,
-the `ipc-zstd` fixture, fixture chunk streams, the selector and the C ABI are
-implemented and tested. The general JSON lane, general IPC lane and shared
-memory are not implemented yet. The `describe` manifest reports those
-capabilities honestly.
+Status: first build. The frame codec, the int64 schema spike, the general schema
+codec for common Arrow types, the canonical eight-column JSON fixture, the
+one-field IPC spike, the eight-column IPC fixture, the `ipc-zstd` fixture,
+fixture chunk streams, the selector and the C ABI are implemented and tested.
+The general JSON lane, general IPC lane and shared memory are not implemented
+yet. The `describe` manifest reports those capabilities honestly.
 
 ## Build
 
@@ -44,6 +44,7 @@ zig build -Doptimize=ReleaseSafe
 | JSON chunk stream | Done, fixture scoped | 1,000 rows in 250-row chunks yields 4 frames; Python and Zig read each other's streams |
 | IPC chunk streams | Done, fixture scoped | json, ipc and ipc-zstd each yield 4 batches at 1,000 rows; Python values equal |
 | C ABI | Done, fixture scoped | Python ctypes checks version, select, inspect all lanes, repack and safe frees |
+| General schema codec | Done, common types | Reader and writer for int, float, binary, utf8, bool, decimal, date and timestamp; pyarrow reads both test schemas |
 | Deterministic selector | Done | 324 of 324 Python selector cases agree on lane and reason |
 | `describe` | Done | Machine-readable JSON with honest capability flags |
 | General JSON lane | Not started | The fixture path is the only JSON table this build accepts |
