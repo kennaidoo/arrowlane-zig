@@ -19,7 +19,7 @@
   },
   "lanes": {
     "json": "fixture",
-    "ipc": false,
+    "ipc": "int64-spike",
     "ipc-zstd": false,
     "shm": false
   },

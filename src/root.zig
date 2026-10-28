@@ -4,6 +4,7 @@ pub const base64 = @import("base64.zig");
 pub const costmodel = @import("costmodel.zig");
 pub const frame = @import("frame.zig");
 pub const fixture_json = @import("fixture_json.zig");
+pub const ipc_int64 = @import("ipc_int64.zig");
 pub const json_int64 = @import("json_int64.zig");
 pub const schema = @import("schema.zig");
 pub const select = @import("select.zig");

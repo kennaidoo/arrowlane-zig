@@ -57,6 +57,18 @@ A one-column int64 frame is also available:
 ./zig-out/bin/arrowlane-zig unpack-int64 --in one.aln
 ```
 
+The one-field IPC spike is separate:
+
+```bash
+./zig-out/bin/arrowlane-zig ipc-int64 --values 1,2,3 > one.arrow
+./zig-out/bin/arrowlane-zig ipc-int64 --in one.arrow
+./zig-out/bin/arrowlane-zig pack-ipc-int64 --values 1,2,3 > one-ipc.aln
+./zig-out/bin/arrowlane-zig unpack-ipc-int64 --in one-ipc.aln
+```
+
+Python reads the raw stream with `pyarrow.ipc.open_stream` and the frame with
+`arrowlane.unpack`.
+
 ## Gate
 
 ```bash

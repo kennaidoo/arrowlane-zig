@@ -3,9 +3,10 @@
 A pure Zig implementation of the arrowlane frame and lane selector.
 
 Status: first build. The frame codec, the int64 schema spike, the canonical
-eight-column JSON fixture and the selector are implemented and tested. The
-general JSON lane, IPC lane, chunks, zstd, shared memory and the C ABI are not
-implemented yet. The `describe` manifest reports those capabilities honestly.
+eight-column JSON fixture, the one-field IPC spike and the selector are
+implemented and tested. The general JSON lane, eight-column IPC lane, chunks,
+zstd, shared memory and the C ABI are not implemented yet. The `describe`
+manifest reports those capabilities honestly.
 
 ## Build
 
@@ -31,10 +32,11 @@ zig build -Doptimize=ReleaseSafe
 | int64 Arrow schema | Spike | Both nullable variants match pyarrow and read back with `pa.ipc.read_schema` |
 | Eight-column schema | Fixture only | The canonical 480 byte message is pinned for the JSON fixture |
 | JSON fixture lane | Done, fixture scoped | Python reads 500 Zig rows with every column equal; Zig validates Python frames |
+| IPC int64 lane | Spike, one column | Zig and pyarrow agree byte-for-byte on 304 byte streams; frames decode both ways |
 | Deterministic selector | Done | 324 of 324 Python selector cases agree on lane and reason |
 | `describe` | Done | Machine-readable JSON with honest capability flags |
 | General JSON lane | Not started | The fixture path is the only JSON table this build accepts |
-| IPC lane | Not started | Planned |
+| Eight-column IPC lane | Not started | Only the one-field int64 spike exists |
 | Chunks, zstd, shm | Not started | Planned |
 | C ABI | Not started | Planned |
 

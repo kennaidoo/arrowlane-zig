@@ -2,7 +2,7 @@ const std = @import("std");
 const arrowlane = @import("arrowlane");
 
 const MANIFEST =
-    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture-plus-int64-spike","json":"fixture","ipc":false,"ipc_zstd":false,"shm":false,"chunks":false,"c_abi":false}}
+    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture-plus-int64-spike","json":"fixture","ipc":"int64-spike","ipc_zstd":false,"shm":false,"chunks":false,"c_abi":false}}
 ;
 
 fn usage() void {
@@ -17,6 +17,10 @@ fn usage() void {
         \\         [--allow lane1,lane2] [--shm-ready] [--json]
         \\  pack-int64 --values 1,2,null  write a one-column JSON frame
         \\  unpack-int64 --in frame.aln    read a one-column JSON frame
+        \\  ipc-int64 --values 1,2,3       write a one-field int64 IPC stream
+        \\  ipc-int64 --in stream.arrow    read a one-field int64 IPC stream
+        \\  pack-ipc-int64 --values 1,2,3  write a one-field int64 IPC frame
+        \\  unpack-ipc-int64 --in frame.aln read a one-field int64 IPC frame
         \\  pack --lane json [--rows N] [--out FILE]  write the fixture JSON frame
         \\  unpack FILE [--json]          validate a fixture JSON frame
         \\  schema-int64 [--nullable]  write the int64 schema spike to stdout
@@ -209,6 +213,90 @@ pub fn main(init: std.process.Init) !void {
             std.process.exit(2);
         };
         try printDecision(writer, decision, as_json);
+        try writer.flush();
+        return;
+    }
+    if (std.mem.eql(u8, command, "ipc-int64")) {
+        if (args.len < 4) return error.MissingValue;
+        if (std.mem.eql(u8, args[2], "--values")) {
+            var values: std.ArrayList(i64) = .empty;
+            defer values.deinit(init.gpa);
+            var parts = std.mem.splitScalar(u8, args[3], ',');
+            while (parts.next()) |part| {
+                const trimmed = std.mem.trim(u8, part, " ");
+                if (trimmed.len == 0) continue;
+                values.append(init.gpa, try std.fmt.parseInt(i64, trimmed, 10)) catch return error.OutOfMemory;
+            }
+            const owned = values.toOwnedSlice(init.gpa) catch return error.OutOfMemory;
+            defer init.gpa.free(owned);
+            const raw = arrowlane.ipc_int64.encode(init.gpa, owned) catch |err| {
+                std.debug.print("error: {s}\n", .{@errorName(err)});
+                std.process.exit(2);
+            };
+            defer init.gpa.free(raw);
+            try writer.writeAll(raw);
+            try writer.flush();
+            return;
+        }
+        if (std.mem.eql(u8, args[2], "--in")) {
+            const data = std.Io.Dir.cwd().readFileAlloc(init.io, args[3], init.gpa, .limited(64 * 1024 * 1024)) catch |err| {
+                std.debug.print("error: {s}\n", .{@errorName(err)});
+                std.process.exit(2);
+            };
+            defer init.gpa.free(data);
+            const values = arrowlane.ipc_int64.decode(init.gpa, data) catch |err| {
+                std.debug.print("error: {s}\n", .{@errorName(err)});
+                std.process.exit(2);
+            };
+            defer init.gpa.free(values);
+            for (values, 0..) |value, index| {
+                if (index > 0) try writer.writeAll(",");
+                try writer.print("{d}", .{value});
+            }
+            try writer.writeAll("\n");
+            try writer.flush();
+            return;
+        }
+        return error.MissingValue;
+    }
+    if (std.mem.eql(u8, command, "pack-ipc-int64")) {
+        if (args.len < 4 or !std.mem.eql(u8, args[2], "--values")) return error.MissingValue;
+        var values: std.ArrayList(i64) = .empty;
+        defer values.deinit(init.gpa);
+        var parts = std.mem.splitScalar(u8, args[3], ',');
+        while (parts.next()) |part| {
+            const trimmed = std.mem.trim(u8, part, " ");
+            if (trimmed.len == 0) continue;
+            values.append(init.gpa, try std.fmt.parseInt(i64, trimmed, 10)) catch return error.OutOfMemory;
+        }
+        const owned = values.toOwnedSlice(init.gpa) catch return error.OutOfMemory;
+        defer init.gpa.free(owned);
+        const wire = arrowlane.ipc_int64.encodeFrame(init.gpa, owned) catch |err| {
+            std.debug.print("error: {s}\n", .{@errorName(err)});
+            std.process.exit(2);
+        };
+        defer init.gpa.free(wire);
+        try writer.writeAll(wire);
+        try writer.flush();
+        return;
+    }
+    if (std.mem.eql(u8, command, "unpack-ipc-int64")) {
+        if (args.len < 4 or !std.mem.eql(u8, args[2], "--in")) return error.MissingValue;
+        const data = std.Io.Dir.cwd().readFileAlloc(init.io, args[3], init.gpa, .limited(64 * 1024 * 1024)) catch |err| {
+            std.debug.print("error: {s}\n", .{@errorName(err)});
+            std.process.exit(2);
+        };
+        defer init.gpa.free(data);
+        const values = arrowlane.ipc_int64.decodeFrame(init.gpa, data) catch |err| {
+            std.debug.print("error: {s}\n", .{@errorName(err)});
+            std.process.exit(2);
+        };
+        defer init.gpa.free(values);
+        for (values, 0..) |value, index| {
+            if (index > 0) try writer.writeAll(",");
+            try writer.print("{d}", .{value});
+        }
+        try writer.writeAll("\n");
         try writer.flush();
         return;
     }

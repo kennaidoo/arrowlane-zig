@@ -76,7 +76,25 @@ count and lane name.
 The one-column int64 path remains available for the smaller schema spike. It
 uses the same frame and header rules.
 
+## IPC int64 spike
+
+`arrowlane.ipc_int64.encode(allocator, values) ![]u8`
+
+Write a one-field int64 Arrow IPC stream with no nulls. The stream is the exact
+layout pyarrow writes for 1, 2 and 3: 304 bytes, byte-for-byte equal.
+
+`arrowlane.ipc_int64.decode(allocator, raw) ![]i64`
+
+Read the same stream. It rejects a different schema, a changed length, a bad
+body length and a missing EOS marker.
+
+`arrowlane.ipc_int64.encodeFrame` and `decodeFrame`
+
+Wrap the stream in a lane 2 arrowlane frame. Python `IpcLane` reads the Zig
+frame, and Zig reads the Python frame. This is a one-column spike, not a general
+IPC codec.
+
 ## Not implemented
 
-The general JSON lane, IPC lane, chunk stream, zstd, shared memory and C ABI are
-not in this build. The `describe` manifest reports them as false.
+The general JSON lane, eight-column IPC lane, chunk stream, zstd, shared memory
+and C ABI are not in this build. The `describe` manifest reports them as false.

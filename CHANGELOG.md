@@ -9,6 +9,7 @@
 - Add the canonical eight-column JSON fixture lane with a pinned 480 byte schema
   message.
 - Add `pack` and `unpack` for the fixture JSON frame.
+- Add the one-field int64 IPC spike, including its lane 2 frame wrapper.
 - Add the deterministic selector with the shipped cost model.
 - Add `describe`, `select`, `pack`, `unpack`, `pack-int64`, `unpack-int64` and
   `schema-int64` commands.
