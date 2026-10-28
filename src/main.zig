@@ -2,7 +2,7 @@ const std = @import("std");
 const arrowlane = @import("arrowlane");
 
 const MANIFEST =
-    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture-plus-int64-spike","json":"fixture","ipc":"int64-spike","ipc_zstd":false,"shm":false,"chunks":false,"c_abi":false}}
+    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture","json":"fixture","ipc":"fixture","ipc_zstd":false,"shm":false,"chunks":false,"c_abi":false}}
 ;
 
 fn usage() void {
@@ -322,14 +322,20 @@ pub fn main(init: std.process.Init) !void {
                 return error.UnknownOption;
             }
         }
-        if (!std.mem.eql(u8, lane, "json")) {
+        if (!std.mem.eql(u8, lane, "json") and !std.mem.eql(u8, lane, "ipc")) {
             std.debug.print("error: lane {s} is not implemented\n", .{lane});
             std.process.exit(2);
         }
-        const wire = arrowlane.fixture_json.encodeSample(init.gpa, rows) catch |err| {
-            std.debug.print("error: {s}\n", .{@errorName(err)});
-            std.process.exit(2);
-        };
+        const wire = if (std.mem.eql(u8, lane, "ipc"))
+            arrowlane.ipc_fixture.encodeFrame(init.gpa, rows) catch |err| {
+                std.debug.print("error: {s}\n", .{@errorName(err)});
+                std.process.exit(2);
+            }
+        else
+            arrowlane.fixture_json.encodeSample(init.gpa, rows) catch |err| {
+                std.debug.print("error: {s}\n", .{@errorName(err)});
+                std.process.exit(2);
+            };
         defer init.gpa.free(wire);
         if (out_path) |path| {
             std.Io.Dir.cwd().writeFile(init.io, .{ .sub_path = path, .data = wire }) catch |err| {
@@ -351,9 +357,30 @@ pub fn main(init: std.process.Init) !void {
             std.process.exit(2);
         };
         defer init.gpa.free(data);
-        const summary = arrowlane.fixture_json.validate(init.gpa, data) catch |err| {
+        const parsed = arrowlane.frame.decode(init.gpa, data, .{}) catch |err| {
             std.debug.print("error: {s}\n", .{@errorName(err)});
             std.process.exit(2);
+        };
+        const Summary = struct { rows: u64, lane: []const u8 };
+        const summary: Summary = switch (parsed.lane_id) {
+            1 => blk: {
+                const value = arrowlane.fixture_json.validate(init.gpa, data) catch |err| {
+                    std.debug.print("error: {s}\n", .{@errorName(err)});
+                    std.process.exit(2);
+                };
+                break :blk .{ .rows = value.rows, .lane = value.lane };
+            },
+            2 => blk: {
+                const value = arrowlane.ipc_fixture.decodeFrame(init.gpa, data) catch |err| {
+                    std.debug.print("error: {s}\n", .{@errorName(err)});
+                    std.process.exit(2);
+                };
+                break :blk .{ .rows = value.rows, .lane = value.lane };
+            },
+            else => {
+                std.debug.print("error: lane is not a fixture lane\n", .{});
+                std.process.exit(2);
+            },
         };
         if (as_json) {
             try writer.print(

@@ -10,6 +10,8 @@
   message.
 - Add `pack` and `unpack` for the fixture JSON frame.
 - Add the one-field int64 IPC spike, including its lane 2 frame wrapper.
+- Add the canonical eight-column IPC fixture with a 504 byte metadata template.
+- Add `pack --lane ipc` and fixture IPC validation.
 - Add the deterministic selector with the shipped cost model.
 - Add `describe`, `select`, `pack`, `unpack`, `pack-int64`, `unpack-int64` and
   `schema-int64` commands.

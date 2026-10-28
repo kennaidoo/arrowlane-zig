@@ -3,10 +3,10 @@
 A pure Zig implementation of the arrowlane frame and lane selector.
 
 Status: first build. The frame codec, the int64 schema spike, the canonical
-eight-column JSON fixture, the one-field IPC spike and the selector are
-implemented and tested. The general JSON lane, eight-column IPC lane, chunks,
-zstd, shared memory and the C ABI are not implemented yet. The `describe`
-manifest reports those capabilities honestly.
+eight-column JSON fixture, the one-field IPC spike, the eight-column IPC fixture
+and the selector are implemented and tested. The general JSON lane, general IPC
+lane, chunks, zstd, shared memory and the C ABI are not implemented yet. The
+`describe` manifest reports those capabilities honestly.
 
 ## Build
 
@@ -31,12 +31,13 @@ zig build -Doptimize=ReleaseSafe
 | Header and payload limits | Done | Unit tests for truncation, trailing bytes, bad magic and bad checksum |
 | int64 Arrow schema | Spike | Both nullable variants match pyarrow and read back with `pa.ipc.read_schema` |
 | Eight-column schema | Fixture only | The canonical 480 byte message is pinned for the JSON fixture |
-| JSON fixture lane | Done, fixture scoped | Python reads 500 Zig rows with every column equal; Zig validates Python frames |
+| JSON fixture lane | Done, fixture scoped | Python matches all 8 columns at 500, 20,000 and 200,000 rows; Zig validates Python frames at 500 and 20,000 |
 | IPC int64 lane | Spike, one column | Zig and pyarrow agree byte-for-byte on 304 byte streams; frames decode both ways |
+| IPC fixture lane | Done, fixture scoped | Python matches all 8 columns at 14, 500, 20,000 and 200,000 rows; Zig decodes Python frames at 500 and 20,000 |
 | Deterministic selector | Done | 324 of 324 Python selector cases agree on lane and reason |
 | `describe` | Done | Machine-readable JSON with honest capability flags |
 | General JSON lane | Not started | The fixture path is the only JSON table this build accepts |
-| Eight-column IPC lane | Not started | Only the one-field int64 spike exists |
+| General IPC lane | Not started | The eight-column path is pinned to the canonical fixture |
 | Chunks, zstd, shm | Not started | Planned |
 | C ABI | Not started | Planned |
 
@@ -85,10 +86,10 @@ every column and the schema against `interop/check_wire.sample_table`.
 ## Compatibility boundary
 
 The frame layout matches the Python and Rust implementations. The int64 schema
-spike matches the exact pyarrow encapsulated messages. The JSON lane is pinned
-to the canonical eight-column fixture and its 480 byte schema message. General
-Arrow schema and record batch encoding are not built yet, so this build does not
-claim wire compatibility beyond that fixture.
+spike matches the exact pyarrow encapsulated messages. The JSON and IPC lanes
+are pinned to the canonical eight-column fixture and its 480 byte schema
+message. General Arrow schema and record batch encoding are not built yet, so
+this build does not claim wire compatibility beyond that fixture.
 
 ## Development
 

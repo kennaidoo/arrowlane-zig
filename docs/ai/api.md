@@ -94,7 +94,24 @@ Wrap the stream in a lane 2 arrowlane frame. Python `IpcLane` reads the Zig
 frame, and Zig reads the Python frame. This is a one-column spike, not a general
 IPC codec.
 
+## Fixture IPC lane
+
+`arrowlane.ipc_fixture.encodeSample(allocator, rows) ![]u8`
+
+Encode the canonical eight-column fixture as one Arrow IPC stream. The schema is
+the pinned 480 byte message and the record-batch metadata is a pinned 504 byte
+template with 8 field nodes and 18 buffer descriptors.
+
+`arrowlane.ipc_fixture.validate` and `decodeFrame`
+
+Validate one stream or one lane 2 frame. The body plan checks the row count, name
+null count, every buffer offset and every buffer length.
+
+Python reads the Zig IPC fixture at 14, 500, 20,000 and 200,000 rows with every
+column equal. Zig reads Python IPC frames at 500 and 20,000 rows. This is a
+fixture-scoped lane, not a general IPC codec.
+
 ## Not implemented
 
-The general JSON lane, eight-column IPC lane, chunk stream, zstd, shared memory
-and C ABI are not in this build. The `describe` manifest reports them as false.
+The general JSON lane, general IPC lane, chunk stream, zstd, shared memory and C
+ABI are not in this build. The `describe` manifest reports them as false.

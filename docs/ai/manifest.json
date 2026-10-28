@@ -19,7 +19,7 @@
   },
   "lanes": {
     "json": "fixture",
-    "ipc": "int64-spike",
+    "ipc": "fixture",
     "ipc-zstd": false,
     "shm": false
   },
@@ -29,7 +29,7 @@
     "parity_result": "pass"
   },
   "schema": {
-    "implemented": "fixture-plus-int64-spike",
+    "implemented": "fixture",
     "nullable_variants": true,
     "fixture_schema_bytes": 480,
     "general_arrow_schema": false
