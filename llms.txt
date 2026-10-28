@@ -1,0 +1,28 @@
+# arrowlane-zig
+
+> A pure Zig implementation of the arrowlane wire frame and lane selector.
+
+## Start here
+
+- [README.md](README.md): build, status and frame layout.
+- [docs/ai/manifest.json](docs/ai/manifest.json): machine-readable capabilities and limits.
+- [docs/ai/quickstart.md](docs/ai/quickstart.md): build and first command.
+- [docs/ai/api.md](docs/ai/api.md): implemented calls and limits.
+- [SECURITY.md](SECURITY.md): private reporting route.
+
+## Current boundary
+
+Implemented: frame encode/decode, int64 schema spike, selector, `describe`.
+
+Not implemented: JSON lane, IPC lane, chunks, zstd, shared memory, C ABI.
+
+The manifest reports false for every unimplemented capability. Do not treat the
+frame layout alone as table compatibility.
+
+## Commands
+
+- `zig build`
+- `zig build test`
+- `zig build -Doptimize=ReleaseSafe`
+- `bash scripts/gate.sh`
+- `zig-out/bin/arrowlane-zig describe`

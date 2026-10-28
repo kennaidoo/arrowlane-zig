@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.zig text eol=lf
+*.zon text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.exe binary
+*.pdb binary

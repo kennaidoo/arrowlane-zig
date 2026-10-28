@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "kind": "arrowlane",
+  "name": "arrowlane-zig",
+  "version": "0.1.0",
+  "status": "first-build",
+  "frame": {
+    "magic": "ALN1",
+    "version": 1,
+    "prefix_bytes": 38,
+    "max_header_bytes": 65535,
+    "max_payload_bytes": 536870912,
+    "max_uncompressed_bytes": 1073741824
+  },
+  "streaming": {
+    "default_chunk_rows": 50000,
+    "max_chunks": 1000000,
+    "implemented": false
+  },
+  "lanes": {
+    "json": false,
+    "ipc": false,
+    "ipc-zstd": false,
+    "shm": false
+  },
+  "selector": {
+    "implemented": true,
+    "parity_cases": 324,
+    "parity_result": "pass"
+  },
+  "schema": {
+    "implemented": "int64-spike",
+    "nullable_variants": true,
+    "general_arrow_schema": false
+  },
+  "c_abi": false,
+  "platforms": {
+    "windows": "frame, selector and int64 schema spike",
+    "linux": "frame, selector and int64 schema spike",
+    "macos": "frame, selector and int64 schema spike"
+  }
+}
