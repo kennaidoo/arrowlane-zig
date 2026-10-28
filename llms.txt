@@ -13,11 +13,10 @@
 ## Current boundary
 
 Implemented: frame encode/decode, int64 schema spike, canonical eight-column
-JSON, IPC and ipc-zstd fixtures, one-field int64 IPC spike, JSON chunk streams,
-selector, `describe`.
+JSON, IPC and ipc-zstd fixtures, one-field int64 IPC spike, fixture chunk
+streams, selector, `describe`.
 
-Not implemented: general JSON lane, general IPC lane, IPC chunk streams, shared
-memory, C ABI.
+Not implemented: general JSON lane, general IPC lane, shared memory, C ABI.
 
 The manifest reports false for every unimplemented capability. Do not treat the
 fixture path as a general Arrow table codec.

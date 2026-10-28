@@ -75,12 +75,13 @@ Run `bash tools/fetch-zstd.sh` once before building.
 ## JSON chunks
 
 ```bash
-./zig-out/bin/arrowlane-zig pack-chunks --rows 1000 --chunk-rows 250 --out chunks.aln
+./zig-out/bin/arrowlane-zig pack-chunks --rows 1000 --chunk-rows 250 --lane json --out chunks.aln
 ./zig-out/bin/arrowlane-zig unpack-chunks --in chunks.aln --json
 ```
 
-The result is four ordered frames. Python `read_chunks` returns four 250-row
-batches and `write_chunks` produces a stream Zig accepts.
+The result is four ordered frames. The same commands accept `--lane ipc` and
+`--lane ipc-zstd`. Python `read_chunks` returns four 250-row batches and
+`write_chunks` produces streams Zig accepts.
 
 ## Gate
 

@@ -130,21 +130,22 @@ stays in Zig's standard library.
 
 ## Chunk stream
 
-`arrowlane.chunks.pack(allocator, rows, chunk_rows) ![]u8`
+`arrowlane.chunks.packLane(allocator, rows, chunk_rows, lane) ![]u8`
 
-Split the canonical JSON fixture into sequential frames. Each frame carries
-`chunk.id`, `chunk.index` and `chunk.last`. The stream id is 32 lowercase hex
-characters. Rows default to 50,000 per chunk in the Python package; this build
-requires the caller to pass `chunk_rows`.
+Split the canonical fixture into sequential frames on `json`, `ipc` or
+`ipc-zstd`. Each frame carries `chunk.id`, `chunk.index` and `chunk.last`. The
+stream id is 32 lowercase hex characters.
 
 `arrowlane.chunks.validate(allocator, data) !Summary`
 
-Validate every frame, the stream id, the index sequence, the last marker and
-each fixture row. It returns the total row count and chunk count.
+Validate every frame, the lane, the stream id, the index sequence, the last
+marker and the row totals. JSON rows are checked field by field. For IPC and
+ipc-zstd chunks, Zig validates the frame envelope, schema and row totals, while
+Python validates the column values. This accepts pyarrow's padded binary
+buffers without pretending the padding is fixture data.
 
-Python `read_chunks` yields four 250-row batches from the 1,000 row Zig stream;
-Zig validates the Python `write_chunks` stream. This is a JSON fixture stream,
-not a general chunk codec.
+Python `read_chunks` yields four 250-row batches for each of the three lanes;
+Zig accepts Python `write_chunks` streams for all three.
 
 ## Not implemented
 

@@ -2,7 +2,7 @@ const std = @import("std");
 const arrowlane = @import("arrowlane");
 
 const MANIFEST =
-    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture","json":"fixture","ipc":"fixture","ipc_zstd":"fixture","shm":false,"chunks":"json-fixture","c_abi":false}}
+    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture","json":"fixture","ipc":"fixture","ipc_zstd":"fixture","shm":false,"chunks":"fixture","c_abi":false}}
 ;
 
 fn usage() void {
@@ -24,7 +24,8 @@ fn usage() void {
         \\  pack --lane json [--rows N] [--out FILE]  write the fixture JSON frame
         \\  unpack FILE [--json]          validate a fixture JSON frame
         \\  pack-chunks --rows N --chunk-rows M --out FILE  write JSON chunks
-        \\  unpack-chunks --in FILE [--json]                validate JSON chunks
+        \\         [--lane json|ipc|ipc-zstd]
+        \\  unpack-chunks --in FILE [--json]                validate chunks
         \\  schema-int64 [--nullable]  write the int64 schema spike to stdout
         \\  version                   print the version
         \\
@@ -411,16 +412,19 @@ pub fn main(init: std.process.Init) !void {
         var rows: ?usize = null;
         var chunk_rows: ?usize = null;
         var out_path: ?[]const u8 = null;
+        var lane: []const u8 = "json";
         var index: usize = 2;
         while (index < args.len) {
             const arg = args[index];
-            if (std.mem.eql(u8, arg, "--rows") or std.mem.eql(u8, arg, "--chunk-rows") or std.mem.eql(u8, arg, "--out")) {
+            if (std.mem.eql(u8, arg, "--rows") or std.mem.eql(u8, arg, "--chunk-rows") or std.mem.eql(u8, arg, "--out") or std.mem.eql(u8, arg, "--lane")) {
                 if (index + 1 >= args.len) return error.MissingValue;
                 const value = args[index + 1];
                 if (std.mem.eql(u8, arg, "--rows")) {
                     rows = try std.fmt.parseInt(usize, value, 10);
                 } else if (std.mem.eql(u8, arg, "--chunk-rows")) {
                     chunk_rows = try std.fmt.parseInt(usize, value, 10);
+                } else if (std.mem.eql(u8, arg, "--lane")) {
+                    lane = value;
                 } else {
                     out_path = value;
                 }
@@ -430,7 +434,7 @@ pub fn main(init: std.process.Init) !void {
             }
         }
         if (rows == null or chunk_rows == null) return error.MissingValue;
-        const wire = arrowlane.chunks.pack(init.gpa, rows.?, chunk_rows.?) catch |err| {
+        const wire = arrowlane.chunks.packLane(init.gpa, rows.?, chunk_rows.?, lane) catch |err| {
             std.debug.print("error: {s}\n", .{@errorName(err)});
             std.process.exit(2);
         };

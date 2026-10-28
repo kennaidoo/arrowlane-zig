@@ -7,12 +7,15 @@
 const std = @import("std");
 const frame = @import("frame.zig");
 const fixture_json = @import("fixture_json.zig");
+const ipc_fixture = @import("ipc_fixture.zig");
+const ipc_zstd = @import("ipc_zstd.zig");
 
 pub const Error = error{
     BadArgument,
     BadChunk,
     BadFrame,
     BadStream,
+    UnknownLane,
     OutOfMemory,
 };
 
@@ -61,7 +64,12 @@ fn chunkOf(allocator: std.mem.Allocator, header_json: []const u8, id_out: *[32]u
 }
 
 pub fn pack(allocator: std.mem.Allocator, rows: usize, chunk_rows: usize) Error![]u8 {
+    return packLane(allocator, rows, chunk_rows, "json");
+}
+
+pub fn packLane(allocator: std.mem.Allocator, rows: usize, chunk_rows: usize, lane: []const u8) Error![]u8 {
     if (chunk_rows == 0 or chunk_rows > MAX_CHUNK_ROWS) return error.BadArgument;
+    if (!std.mem.eql(u8, lane, "json") and !std.mem.eql(u8, lane, "ipc") and !std.mem.eql(u8, lane, "ipc-zstd")) return error.UnknownLane;
     var out: std.ArrayList(u8) = .empty;
     defer out.deinit(allocator);
 
@@ -71,10 +79,21 @@ pub fn pack(allocator: std.mem.Allocator, rows: usize, chunk_rows: usize) Error!
         const count = if (start < rows) @min(chunk_rows, rows - start) else 0;
         const last = start + count >= rows;
         const info = frame.ChunkInfo{ .id = stream_id, .index = index, .last = last };
-        const wire = fixture_json.encodeRange(allocator, start, count, info) catch |err| switch (err) {
-            error.OutOfMemory => return error.OutOfMemory,
-            else => return error.BadFrame,
-        };
+        const wire = if (std.mem.eql(u8, lane, "ipc"))
+            ipc_fixture.encodeFrameRange(allocator, start, count, info) catch |err| switch (err) {
+                error.OutOfMemory => return error.OutOfMemory,
+                else => return error.BadFrame,
+            }
+        else if (std.mem.eql(u8, lane, "ipc-zstd"))
+            ipc_zstd.encodeFrameRange(allocator, start, count, info) catch |err| switch (err) {
+                error.OutOfMemory => return error.OutOfMemory,
+                else => return error.BadFrame,
+            }
+        else
+            fixture_json.encodeRange(allocator, start, count, info) catch |err| switch (err) {
+                error.OutOfMemory => return error.OutOfMemory,
+                else => return error.BadFrame,
+            };
         defer allocator.free(wire);
         out.appendSlice(allocator, wire) catch return error.OutOfMemory;
         start += count;
@@ -93,6 +112,7 @@ pub fn validate(allocator: std.mem.Allocator, data: []const u8) Error!Summary {
     var chunks: u64 = 0;
     var last_seen = false;
     var id_storage: [32]u8 = undefined;
+    var lane_name: ?[]const u8 = null;
 
     while (offset < data.len) {
         if (last_seen) return error.BadStream;
@@ -108,15 +128,31 @@ pub fn validate(allocator: std.mem.Allocator, data: []const u8) Error!Summary {
             has_stream = true;
         }
         if (info.index != expected_index) return error.BadChunk;
-        const summary = fixture_json.validate(allocator, wire) catch return error.BadFrame;
-        total_rows += summary.rows;
+        const current_lane = switch (parsed.lane_id) {
+            1 => "json",
+            2 => "ipc",
+            3 => "ipc-zstd",
+            else => return error.BadStream,
+        };
+        if (lane_name) |known| {
+            if (!std.mem.eql(u8, known, current_lane)) return error.BadStream;
+        } else {
+            lane_name = current_lane;
+        }
+        const summary_rows: u64 = switch (parsed.lane_id) {
+            1 => (fixture_json.validate(allocator, wire) catch return error.BadFrame).rows,
+            2 => (ipc_fixture.summaryFrame(allocator, wire) catch return error.BadFrame).rows,
+            3 => (ipc_zstd.summaryFrame(allocator, wire) catch return error.BadFrame).rows,
+            else => unreachable,
+        };
+        total_rows += summary_rows;
         last_seen = info.last;
         offset += span;
         expected_index += 1;
         chunks += 1;
     }
     if (!last_seen) return error.BadStream;
-    return .{ .rows = total_rows, .chunks = chunks, .lane = "json" };
+    return .{ .rows = total_rows, .chunks = chunks, .lane = lane_name orelse "json" };
 }
 
 test "fixture json chunks split and validate" {
@@ -126,6 +162,26 @@ test "fixture json chunks split and validate" {
     const summary = try validate(allocator, stream);
     try std.testing.expectEqual(@as(u64, 1000), summary.rows);
     try std.testing.expectEqual(@as(u64, 4), summary.chunks);
+}
+
+test "fixture ipc chunks split and validate" {
+    const allocator = std.testing.allocator;
+    const stream = try packLane(allocator, 1000, 250, "ipc");
+    defer allocator.free(stream);
+    const summary = try validate(allocator, stream);
+    try std.testing.expectEqual(@as(u64, 1000), summary.rows);
+    try std.testing.expectEqual(@as(u64, 4), summary.chunks);
+    try std.testing.expectEqualStrings("ipc", summary.lane);
+}
+
+test "fixture ipc-zstd chunks split and validate" {
+    const allocator = std.testing.allocator;
+    const stream = try packLane(allocator, 1000, 250, "ipc-zstd");
+    defer allocator.free(stream);
+    const summary = try validate(allocator, stream);
+    try std.testing.expectEqual(@as(u64, 1000), summary.rows);
+    try std.testing.expectEqual(@as(u64, 4), summary.chunks);
+    try std.testing.expectEqualStrings("ipc-zstd", summary.lane);
 }
 
 test "fixture json empty stream is one empty chunk" {

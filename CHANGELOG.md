@@ -13,7 +13,8 @@
 - Add the canonical eight-column IPC fixture with a 504 byte metadata template.
 - Add `pack --lane ipc` and fixture IPC validation.
 - Add the `ipc-zstd` fixture lane with libzstd encode and std decode.
-- Add JSON fixture chunk streams with ordered `chunk` metadata.
+- Add fixture chunk streams for json, ipc and ipc-zstd with ordered `chunk`
+  metadata.
 - Add the deterministic selector with the shipped cost model.
 - Add `describe`, `select`, `pack`, `unpack`, `pack-int64`, `unpack-int64` and
   `schema-int64` commands.
