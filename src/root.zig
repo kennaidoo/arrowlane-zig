@@ -6,6 +6,7 @@ pub const costmodel = @import("costmodel.zig");
 pub const frame = @import("frame.zig");
 pub const fixture_json = @import("fixture_json.zig");
 pub const ipc_fixture = @import("ipc_fixture.zig");
+pub const ipc_zstd = @import("ipc_zstd.zig");
 pub const ipc_int64 = @import("ipc_int64.zig");
 pub const json_int64 = @import("json_int64.zig");
 pub const schema = @import("schema.zig");

@@ -111,6 +111,23 @@ Python reads the Zig IPC fixture at 14, 500, 20,000 and 200,000 rows with every
 column equal. Zig reads Python IPC frames at 500 and 20,000 rows. This is a
 fixture-scoped lane, not a general IPC codec.
 
+## IPC zstd fixture lane
+
+`arrowlane.ipc_zstd.encodeFrame(allocator, rows) ![]u8`
+
+Compress the canonical eight-column IPC stream with libzstd level 3. The frame
+is lane 3 and carries `codec:"zstd"` and `zstd_level:3`.
+
+`arrowlane.ipc_zstd.decodeFrame(allocator, wire) !Summary`
+
+Decompress with `std.compress.zstd.Decompress`, bounded by the declared
+uncompressed length, then validate the IPC fixture. Python reads Zig frames and
+Zig reads Python frames. Full `check_wire.py` passes at 500, 20,000 and 200,000
+rows for json, ipc and ipc-zstd.
+
+`tools/fetch-zstd.sh` fetches the pinned source. libzstd is encode only; decode
+stays in Zig's standard library.
+
 ## Chunk stream
 
 `arrowlane.chunks.pack(allocator, rows, chunk_rows) ![]u8`

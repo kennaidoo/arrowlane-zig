@@ -2,7 +2,7 @@ const std = @import("std");
 const arrowlane = @import("arrowlane");
 
 const MANIFEST =
-    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture","json":"fixture","ipc":"fixture","ipc_zstd":false,"shm":false,"chunks":"json-fixture","c_abi":false}}
+    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture","json":"fixture","ipc":"fixture","ipc_zstd":"fixture","shm":false,"chunks":"json-fixture","c_abi":false}}
 ;
 
 fn usage() void {
@@ -324,11 +324,16 @@ pub fn main(init: std.process.Init) !void {
                 return error.UnknownOption;
             }
         }
-        if (!std.mem.eql(u8, lane, "json") and !std.mem.eql(u8, lane, "ipc")) {
+        if (!std.mem.eql(u8, lane, "json") and !std.mem.eql(u8, lane, "ipc") and !std.mem.eql(u8, lane, "ipc-zstd")) {
             std.debug.print("error: lane {s} is not implemented\n", .{lane});
             std.process.exit(2);
         }
-        const wire = if (std.mem.eql(u8, lane, "ipc"))
+        const wire = if (std.mem.eql(u8, lane, "ipc-zstd"))
+            arrowlane.ipc_zstd.encodeFrame(init.gpa, rows) catch |err| {
+                std.debug.print("error: {s}\n", .{@errorName(err)});
+                std.process.exit(2);
+            }
+        else if (std.mem.eql(u8, lane, "ipc"))
             arrowlane.ipc_fixture.encodeFrame(init.gpa, rows) catch |err| {
                 std.debug.print("error: {s}\n", .{@errorName(err)});
                 std.process.exit(2);
@@ -374,6 +379,13 @@ pub fn main(init: std.process.Init) !void {
             },
             2 => blk: {
                 const value = arrowlane.ipc_fixture.decodeFrame(init.gpa, data) catch |err| {
+                    std.debug.print("error: {s}\n", .{@errorName(err)});
+                    std.process.exit(2);
+                };
+                break :blk .{ .rows = value.rows, .lane = value.lane };
+            },
+            3 => blk: {
+                const value = arrowlane.ipc_zstd.decodeFrame(init.gpa, data) catch |err| {
                     std.debug.print("error: {s}\n", .{@errorName(err)});
                     std.process.exit(2);
                 };

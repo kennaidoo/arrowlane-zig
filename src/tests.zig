@@ -7,6 +7,7 @@ test {
     _ = @import("frame.zig");
     _ = @import("fixture_json.zig");
     _ = @import("ipc_fixture.zig");
+    _ = @import("ipc_zstd.zig");
     _ = @import("ipc_int64.zig");
     _ = @import("json_int64.zig");
     _ = @import("schema.zig");

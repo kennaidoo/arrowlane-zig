@@ -4,17 +4,22 @@ A pure Zig implementation of the arrowlane frame and lane selector.
 
 Status: first build. The frame codec, the int64 schema spike, the canonical
 eight-column JSON fixture, the one-field IPC spike, the eight-column IPC fixture,
-the JSON chunk stream and the selector are implemented and tested. The general
-JSON lane, general IPC lane, IPC chunk stream, zstd, shared memory and the C ABI
-are not implemented yet. The `describe` manifest reports those capabilities
-honestly.
+the `ipc-zstd` fixture, the JSON chunk stream and the selector are implemented
+and tested. The general JSON lane, general IPC lane, IPC chunk stream, shared
+memory and the C ABI are not implemented yet. The `describe` manifest reports
+those capabilities honestly.
 
 ## Build
 
 ```bash
+bash tools/fetch-zstd.sh
 zig build
 zig build test
 ```
+
+`tools/fetch-zstd.sh` downloads the pinned libzstd 1.5.7 tarball, verifies its
+SHA256 and copies `lib` into untracked `vendor/zstd`. The build needs that
+directory for the `ipc-zstd` encoder. The source tarball is not committed.
 
 The release artifact is `zig-out/bin/arrowlane-zig` on POSIX and
 `zig-out/bin/arrowlane-zig.exe` on Windows.
@@ -35,12 +40,13 @@ zig build -Doptimize=ReleaseSafe
 | JSON fixture lane | Done, fixture scoped | Python matches all 8 columns at 500, 20,000 and 200,000 rows; Zig validates Python frames at 500 and 20,000 |
 | IPC int64 lane | Spike, one column | Zig and pyarrow agree byte-for-byte on 304 byte streams; frames decode both ways |
 | IPC fixture lane | Done, fixture scoped | Python matches all 8 columns at 14, 500, 20,000 and 200,000 rows; Zig decodes Python frames at 500 and 20,000 |
+| IPC zstd fixture lane | Done, fixture scoped | Full three-lane `check_wire.py` passes at 500, 20,000 and 200,000 rows, both directions |
 | JSON chunk stream | Done, fixture scoped | 1,000 rows in 250-row chunks yields 4 frames; Python and Zig read each other's streams |
 | Deterministic selector | Done | 324 of 324 Python selector cases agree on lane and reason |
 | `describe` | Done | Machine-readable JSON with honest capability flags |
 | General JSON lane | Not started | The fixture path is the only JSON table this build accepts |
 | General IPC lane | Not started | The eight-column path is pinned to the canonical fixture |
-| IPC chunk stream, zstd, shm | Not started | Planned |
+| IPC chunk stream, shm | Not started | Planned |
 | C ABI | Not started | Planned |
 
 ## Frame layout

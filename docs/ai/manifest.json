@@ -20,7 +20,7 @@
   "lanes": {
     "json": "fixture",
     "ipc": "fixture",
-    "ipc-zstd": false,
+    "ipc-zstd": "fixture",
     "shm": false
   },
   "selector": {

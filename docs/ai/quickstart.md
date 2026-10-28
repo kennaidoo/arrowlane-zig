@@ -69,6 +69,9 @@ The one-field IPC spike is separate:
 Python reads the raw stream with `pyarrow.ipc.open_stream` and the frame with
 `arrowlane.unpack`.
 
+The zstd fixture lane is available with `pack --lane ipc-zstd --rows 500`.
+Run `bash tools/fetch-zstd.sh` once before building.
+
 ## JSON chunks
 
 ```bash

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ ! -f vendor/zstd/zstd.h ]]; then
+  bash tools/fetch-zstd.sh
+fi
+
 zig fmt --check --exclude src/vendor .
 zig build test
 zig build -Doptimize=ReleaseSafe
