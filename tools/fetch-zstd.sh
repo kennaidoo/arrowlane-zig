@@ -15,7 +15,11 @@ fi
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 curl -L --fail --silent --show-error -o "$tmp/zstd.tar.gz" "$url"
-echo "$sha256  $tmp/zstd.tar.gz" | sha256sum -c -
+if command -v sha256sum >/dev/null 2>&1; then
+  echo "$sha256  $tmp/zstd.tar.gz" | sha256sum -c -
+else
+  echo "$sha256  $tmp/zstd.tar.gz" | shasum -a 256 -c -
+fi
 mkdir -p "$tmp/unpack"
 tar -xzf "$tmp/zstd.tar.gz" -C "$tmp/unpack" "zstd-${version}/lib"
 mkdir -p "$root/vendor"
