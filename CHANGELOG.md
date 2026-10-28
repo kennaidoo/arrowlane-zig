@@ -15,6 +15,7 @@
 - Add the `ipc-zstd` fixture lane with libzstd encode and std decode.
 - Add fixture chunk streams for json, ipc and ipc-zstd with ordered `chunk`
   metadata.
+- Add the fixture C ABI and the Python ctypes check.
 - Add the deterministic selector with the shipped cost model.
 - Add `describe`, `select`, `pack`, `unpack`, `pack-int64`, `unpack-int64` and
   `schema-int64` commands.

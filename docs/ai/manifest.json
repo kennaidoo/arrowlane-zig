@@ -34,10 +34,10 @@
     "fixture_schema_bytes": 480,
     "general_arrow_schema": false
   },
-  "c_abi": false,
+  "c_abi": true,
   "platforms": {
-    "windows": "frame, selector and int64 schema spike",
-    "linux": "frame, selector and int64 schema spike",
-    "macos": "frame, selector and int64 schema spike"
+    "windows": "frame, fixture lanes, chunks, selector and C ABI tested",
+    "linux": "not tested",
+    "macos": "not tested"
   }
 }

@@ -61,6 +61,26 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("arrowlane", library);
     b.installArtifact(exe);
 
+    const ffi_module = b.createModule(.{
+        .root_source_file = b.path("src/cabi.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    ffi_module.addImport("arrowlane", library);
+    addZstd(b, ffi_module);
+    const shared = b.addLibrary(.{
+        .name = "arrowlane_zig",
+        .linkage = .dynamic,
+        .root_module = ffi_module,
+    });
+    b.installArtifact(shared);
+    const static = b.addLibrary(.{
+        .name = "arrowlane_zig_static",
+        .linkage = .static,
+        .root_module = ffi_module,
+    });
+    b.installArtifact(static);
+
     const tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/tests.zig"),

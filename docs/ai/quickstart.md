@@ -83,6 +83,17 @@ The result is four ordered frames. The same commands accept `--lane ipc` and
 `--lane ipc-zstd`. Python `read_chunks` returns four 250-row batches and
 `write_chunks` produces streams Zig accepts.
 
+## C ABI
+
+Build, then run the ctypes check from the Python package environment:
+
+```bash
+zig build
+python ../arrowlane-zig/interop/check_zig_ffi.py --lib ../arrowlane-zig/zig-out/bin/arrowlane_zig.dll
+```
+
+The check covers select, inspect on all three lanes, repack and safe frees.
+
 ## Gate
 
 ```bash

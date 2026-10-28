@@ -147,7 +147,19 @@ buffers without pretending the padding is fixture data.
 Python `read_chunks` yields four 250-row batches for each of the three lanes;
 Zig accepts Python `write_chunks` streams for all three.
 
+## C ABI
+
+`include/arrowlane_zig.h` declares the C ABI. `src/cabi.zig` exports
+`al_version`, `al_select`, `al_inspect`, `al_repack`, `al_free` and
+`al_free_reason`. `AlBuffer` is 24 bytes and `AlDecision` is 32 bytes, with
+`predicted_ms` at offset 8 and `reason` at offset 24.
+
+The shared library is `zig-out/bin/arrowlane_zig.dll` on Windows. The static
+archive is `zig-out/lib/arrowlane_zig_static.lib`. `interop/check_zig_ffi.py`
+uses ctypes with `c_void_p` for pointers and checks version, select, inspect on
+all three lanes, repack to IPC and ipc-zstd, and safe frees.
+
 ## Not implemented
 
-The general JSON lane, general IPC lane, IPC chunk stream, zstd, shared memory
-and C ABI are not in this build. The `describe` manifest reports them as false.
+The general JSON lane, general IPC lane and shared memory are not in this build.
+The `describe` manifest reports them as false.
