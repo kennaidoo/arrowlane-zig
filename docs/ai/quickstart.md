@@ -37,7 +37,25 @@ predicted wire bytes, every score and every rejected lane.
 ```
 
 Both files are 128 byte encapsulated Arrow schema messages. They are the only
-schema messages this build supports.
+schema messages this build supports for the one-column path.
+
+## Fixture JSON frame
+
+```bash
+./zig-out/bin/arrowlane-zig pack --lane json --rows 500 --out fixture.aln
+./zig-out/bin/arrowlane-zig unpack fixture.aln --json
+```
+
+The fixture is the canonical eight-column table from the Python and Rust
+projects. `pack` accepts only the `json` lane at this stage. `unpack` validates
+the schema and every row, then prints the row count.
+
+A one-column int64 frame is also available:
+
+```bash
+./zig-out/bin/arrowlane-zig pack-int64 --values 1,-2,null,4 > one.aln
+./zig-out/bin/arrowlane-zig unpack-int64 --in one.aln
+```
 
 ## Gate
 

@@ -12,12 +12,13 @@
 
 ## Current boundary
 
-Implemented: frame encode/decode, int64 schema spike, selector, `describe`.
+Implemented: frame encode/decode, int64 schema spike, canonical eight-column
+JSON fixture, selector, `describe`.
 
-Not implemented: JSON lane, IPC lane, chunks, zstd, shared memory, C ABI.
+Not implemented: general JSON lane, IPC lane, chunks, zstd, shared memory, C ABI.
 
 The manifest reports false for every unimplemented capability. Do not treat the
-frame layout alone as table compatibility.
+fixture path as a general Arrow table codec.
 
 ## Commands
 

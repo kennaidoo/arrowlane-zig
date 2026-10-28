@@ -2,10 +2,10 @@
 
 A pure Zig implementation of the arrowlane frame and lane selector.
 
-Status: first build. The frame codec, the int64 schema spike and the selector are
-implemented and tested. The JSON and IPC lanes, chunks, zstd, shared memory and
-the C ABI are not implemented yet. The `describe` manifest reports those
-capabilities as `false`.
+Status: first build. The frame codec, the int64 schema spike, the canonical
+eight-column JSON fixture and the selector are implemented and tested. The
+general JSON lane, IPC lane, chunks, zstd, shared memory and the C ABI are not
+implemented yet. The `describe` manifest reports those capabilities honestly.
 
 ## Build
 
@@ -29,9 +29,11 @@ zig build -Doptimize=ReleaseSafe
 | 38 byte frame prefix | Done | Byte-for-byte match with the Python encoder for an empty header |
 | Header and payload limits | Done | Unit tests for truncation, trailing bytes, bad magic and bad checksum |
 | int64 Arrow schema | Spike | Both nullable variants match pyarrow and read back with `pa.ipc.read_schema` |
+| Eight-column schema | Fixture only | The canonical 480 byte message is pinned for the JSON fixture |
+| JSON fixture lane | Done, fixture scoped | Python reads 500 Zig rows with every column equal; Zig validates Python frames |
 | Deterministic selector | Done | 324 of 324 Python selector cases agree on lane and reason |
 | `describe` | Done | Machine-readable JSON with honest capability flags |
-| JSON lane | Not started | Planned |
+| General JSON lane | Not started | The fixture path is the only JSON table this build accepts |
 | IPC lane | Not started | Planned |
 | Chunks, zstd, shm | Not started | Planned |
 | C ABI | Not started | Planned |
@@ -68,12 +70,23 @@ same gain floor. On Windows, `shm` is rejected as
 `NOT_AVAILABLE_ON_PLATFORM`; on POSIX it is rejected as `SHM_UNAVAILABLE` unless
 `--shm-ready` is set.
 
+## Fixture JSON lane
+
+```bash
+./zig-out/bin/arrowlane-zig pack --lane json --rows 500 --out fixture.aln
+./zig-out/bin/arrowlane-zig unpack fixture.aln --json
+```
+
+Python reads the Zig frame with `arrowlane.unpack`. The 500 row check compares
+every column and the schema against `interop/check_wire.sample_table`.
+
 ## Compatibility boundary
 
 The frame layout matches the Python and Rust implementations. The int64 schema
-spike matches the exact pyarrow encapsulated messages. General Arrow schema and
-record batch encoding are not built yet, so this build does not claim wire
-compatibility for tables.
+spike matches the exact pyarrow encapsulated messages. The JSON lane is pinned
+to the canonical eight-column fixture and its 480 byte schema message. General
+Arrow schema and record batch encoding are not built yet, so this build does not
+claim wire compatibility beyond that fixture.
 
 ## Development
 

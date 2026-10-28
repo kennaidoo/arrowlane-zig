@@ -57,7 +57,26 @@ Return the exact 128 byte encapsulated message for
 Return the nullable flag when `raw` is one of the two pinned messages. Any other
 message returns `BadSchema`.
 
+## Fixture JSON lane
+
+`arrowlane.fixture_json.encodeSample(allocator, rows) ![]u8`
+
+Encode the canonical eight-column fixture as one JSON frame. The schema message
+is pinned to the 480 byte canonical message. The values follow the Python
+fixture rules.
+
+`arrowlane.fixture_json.validate(allocator, wire) !Summary`
+
+Validate one canonical fixture frame. It checks the lane, the schema message, the
+column count, every row shape and the tag types. The summary carries the row
+count and lane name.
+
+`arrowlane.json_int64`
+
+The one-column int64 path remains available for the smaller schema spike. It
+uses the same frame and header rules.
+
 ## Not implemented
 
-The JSON lane, IPC lane, chunk stream, zstd, shared memory and C ABI are not in
-this build. The `describe` manifest reports them as false.
+The general JSON lane, IPC lane, chunk stream, zstd, shared memory and C ABI are
+not in this build. The `describe` manifest reports them as false.

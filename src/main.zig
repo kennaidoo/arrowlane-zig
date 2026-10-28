@@ -2,7 +2,7 @@ const std = @import("std");
 const arrowlane = @import("arrowlane");
 
 const MANIFEST =
-    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"int64-spike","json":false,"ipc":false,"ipc_zstd":false,"shm":false,"chunks":false,"c_abi":false}}
+    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"fixture-plus-int64-spike","json":"fixture","ipc":false,"ipc_zstd":false,"shm":false,"chunks":false,"c_abi":false}}
 ;
 
 fn usage() void {
@@ -15,6 +15,10 @@ fn usage() void {
         \\         [--topology same_host|same_network|wide_area]
         \\         [--policy latency|throughput|cpu]
         \\         [--allow lane1,lane2] [--shm-ready] [--json]
+        \\  pack-int64 --values 1,2,null  write a one-column JSON frame
+        \\  unpack-int64 --in frame.aln    read a one-column JSON frame
+        \\  pack --lane json [--rows N] [--out FILE]  write the fixture JSON frame
+        \\  unpack FILE [--json]          validate a fixture JSON frame
         \\  schema-int64 [--nullable]  write the int64 schema spike to stdout
         \\  version                   print the version
         \\
@@ -59,6 +63,18 @@ fn printDecision(writer: *std.Io.Writer, decision: arrowlane.select.Decision, as
     );
 }
 
+fn printValues(writer: *std.Io.Writer, values: []const ?i64) !void {
+    for (values, 0..) |value, index| {
+        if (index > 0) try writer.writeAll(",");
+        if (value) |number| {
+            try writer.print("{d}", .{number});
+        } else {
+            try writer.writeAll("null");
+        }
+    }
+    try writer.writeAll("\n");
+}
+
 pub fn main(init: std.process.Init) !void {
     const args = try init.minimal.args.toSlice(init.arena.allocator());
     if (args.len < 2) {
@@ -86,6 +102,45 @@ pub fn main(init: std.process.Init) !void {
         const raw = try arrowlane.schema.encodeInt64(init.gpa, nullable);
         defer init.gpa.free(raw);
         try writer.writeAll(raw);
+        try writer.flush();
+        return;
+    }
+    if (std.mem.eql(u8, command, "pack-int64")) {
+        if (args.len < 4 or !std.mem.eql(u8, args[2], "--values")) return error.MissingValue;
+        var values: std.ArrayList(?i64) = .empty;
+        defer values.deinit(init.gpa);
+        var parts = std.mem.splitScalar(u8, args[3], ',');
+        while (parts.next()) |part| {
+            const trimmed = std.mem.trim(u8, part, " ");
+            if (trimmed.len == 0) continue;
+            if (std.mem.eql(u8, trimmed, "null")) {
+                values.append(init.gpa, null) catch return error.OutOfMemory;
+            } else {
+                const number = try std.fmt.parseInt(i64, trimmed, 10);
+                values.append(init.gpa, number) catch return error.OutOfMemory;
+            }
+        }
+        const owned = values.toOwnedSlice(init.gpa) catch return error.OutOfMemory;
+        defer init.gpa.free(owned);
+        const wire = arrowlane.json_int64.encode(init.gpa, owned) catch |err| {
+            std.debug.print("error: {s}\n", .{@errorName(err)});
+            std.process.exit(2);
+        };
+        defer init.gpa.free(wire);
+        try writer.writeAll(wire);
+        try writer.flush();
+        return;
+    }
+    if (std.mem.eql(u8, command, "unpack-int64")) {
+        if (args.len < 4 or !std.mem.eql(u8, args[2], "--in")) return error.MissingValue;
+        const data = try std.Io.Dir.cwd().readFileAlloc(init.io, args[3], init.gpa, .limited(64 * 1024 * 1024));
+        defer init.gpa.free(data);
+        const values = arrowlane.json_int64.decode(init.gpa, data) catch |err| {
+            std.debug.print("error: {s}\n", .{@errorName(err)});
+            std.process.exit(2);
+        };
+        defer init.gpa.free(values);
+        try printValues(writer, values);
         try writer.flush();
         return;
     }
@@ -154,6 +209,72 @@ pub fn main(init: std.process.Init) !void {
             std.process.exit(2);
         };
         try printDecision(writer, decision, as_json);
+        try writer.flush();
+        return;
+    }
+    if (std.mem.eql(u8, command, "pack")) {
+        var lane: []const u8 = "ipc";
+        var rows: usize = 500;
+        var out_path: ?[]const u8 = null;
+        var index: usize = 2;
+        while (index < args.len) {
+            const arg = args[index];
+            if (std.mem.eql(u8, arg, "--lane") or std.mem.eql(u8, arg, "--rows") or std.mem.eql(u8, arg, "--out")) {
+                if (index + 1 >= args.len) return error.MissingValue;
+                const value = args[index + 1];
+                if (std.mem.eql(u8, arg, "--lane")) {
+                    lane = value;
+                } else if (std.mem.eql(u8, arg, "--rows")) {
+                    rows = try std.fmt.parseInt(usize, value, 10);
+                } else {
+                    out_path = value;
+                }
+                index += 2;
+            } else {
+                return error.UnknownOption;
+            }
+        }
+        if (!std.mem.eql(u8, lane, "json")) {
+            std.debug.print("error: lane {s} is not implemented\n", .{lane});
+            std.process.exit(2);
+        }
+        const wire = arrowlane.fixture_json.encodeSample(init.gpa, rows) catch |err| {
+            std.debug.print("error: {s}\n", .{@errorName(err)});
+            std.process.exit(2);
+        };
+        defer init.gpa.free(wire);
+        if (out_path) |path| {
+            std.Io.Dir.cwd().writeFile(init.io, .{ .sub_path = path, .data = wire }) catch |err| {
+                std.debug.print("error: {s}\n", .{@errorName(err)});
+                std.process.exit(2);
+            };
+        } else {
+            try writer.writeAll(wire);
+            try writer.flush();
+        }
+        return;
+    }
+    if (std.mem.eql(u8, command, "unpack")) {
+        if (args.len < 3 or std.mem.startsWith(u8, args[2], "-")) return error.MissingValue;
+        const path = args[2];
+        const as_json = args.len > 3 and std.mem.eql(u8, args[3], "--json");
+        const data = std.Io.Dir.cwd().readFileAlloc(init.io, path, init.gpa, .limited(64 * 1024 * 1024)) catch |err| {
+            std.debug.print("error: {s}\n", .{@errorName(err)});
+            std.process.exit(2);
+        };
+        defer init.gpa.free(data);
+        const summary = arrowlane.fixture_json.validate(init.gpa, data) catch |err| {
+            std.debug.print("error: {s}\n", .{@errorName(err)});
+            std.process.exit(2);
+        };
+        if (as_json) {
+            try writer.print(
+                "{{\"lane\":\"{s}\",\"rows\":{d},\"columns\":8,\"wire_bytes\":{d}}}\n",
+                .{ summary.lane, summary.rows, data.len },
+            );
+        } else {
+            try writer.print("lane={s} rows={d} columns=8 wire_bytes={d}\n", .{ summary.lane, summary.rows, data.len });
+        }
         try writer.flush();
         return;
     }
