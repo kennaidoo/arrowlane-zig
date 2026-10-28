@@ -67,7 +67,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     ffi_module.addImport("arrowlane", library);
-    addZstd(b, ffi_module);
     const shared = b.addLibrary(.{
         .name = "arrowlane_zig",
         .linkage = .dynamic,
