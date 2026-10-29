@@ -121,7 +121,7 @@ every column and the schema against `interop/check_wire.sample_table`.
 
 ## Performance
 
-The canonical fixture at 200,000 rows, median of three runs, is recorded in
+The canonical fixture at 200,000 rows, median of five runs, is recorded in
 [docs/performance.md](docs/performance.md). JSON is the clear Zig win. IPC and
 `ipc-zstd` are correct but slower than Python and Rust. The reference
 implementation for those lanes is arrow-cpp through the Rust port. Do not

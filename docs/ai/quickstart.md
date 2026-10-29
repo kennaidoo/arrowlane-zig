@@ -97,7 +97,7 @@ The result is four ordered frames. The same commands accept `--lane ipc` and
 
 ```bash
 zig build -Doptimize=ReleaseSafe
-./zig-out/bin/arrowlane-zig bench --rows 200000 --repeats 3
+./zig-out/bin/arrowlane-zig bench --rows 200000 --repeats 5
 ```
 
 The command prints `lane wire_bytes enc_ms dec_ms` for `json`, `ipc` and

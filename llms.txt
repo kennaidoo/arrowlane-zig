@@ -34,7 +34,7 @@ as fixture scoped. Do not treat the fixture path as a general Arrow table codec.
 - `bash scripts/gate.sh`
 - `zig-out/bin/arrowlane-zig describe`
 - `zig-out/bin/arrowlane-zig --version`
-- `zig-out/bin/arrowlane-zig bench --rows 200000 --repeats 3`
+- `zig-out/bin/arrowlane-zig bench --rows 200000 --repeats 5`
 
 ## Performance
 
