@@ -2,7 +2,7 @@ const std = @import("std");
 const arrowlane = @import("arrowlane");
 
 const MANIFEST =
-    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.3.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"general","json":"fixture","ipc":"fixture","ipc_zstd":"fixture","shm":"fixture-posix","chunks":"fixture","c_abi":true,"bench":true,"fuzz":"linux-x86_64"}}
+    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.3.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"general","json":"fixture","ipc":"fixture","ipc_zstd":"fixture","shm":"fixture-posix","chunks":"fixture","c_abi":true,"bench":true,"fuzz":"linux"}}
 ;
 
 fn usage() void {

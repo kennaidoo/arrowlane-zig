@@ -97,7 +97,7 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_tests.step);
 
-    if (target.result.os.tag == .linux and target.result.cpu.arch == .x86_64) {
+    if (target.result.os.tag == .linux) {
         const fuzz_tests = b.addTest(.{
             .root_module = b.createModule(.{
                 .root_source_file = b.path("src/fuzz.zig"),
