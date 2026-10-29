@@ -79,6 +79,7 @@ jobs:
           run: |
             export ARROWLAND_SHM_DIR=/tmp/arrowlane-shm
             mkdir -p "$ARROWLAND_SHM_DIR"
+            mkdir -p /opt
             curl -fsSL https://ziglang.org/download/0.17.0/zig-aarch64-freebsd-0.17.0.tar.xz -o /tmp/zig.tar.xz
             tar -xJf /tmp/zig.tar.xz -C /opt
             ln -s /opt/zig-aarch64-freebsd-0.17.0/zig /usr/local/bin/zig
