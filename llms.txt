@@ -14,17 +14,28 @@
 
 Implemented: frame encode/decode, general schema reader/writer for common
 types, canonical eight-column JSON, IPC and ipc-zstd fixtures, one-field int64
-IPC spike, fixture chunk streams, selector, C ABI, `describe`.
+IPC spike, fixture chunk streams, selector, C ABI, POSIX shm fixture lane,
+`bench`, parser fuzz targets and `describe`.
 
-Not implemented: general JSON lane, general IPC lane, shared memory.
+Not implemented: general JSON lane, general IPC lane, general record batch
+codec. The shm lane is POSIX only and has no CLI command.
 
-The manifest reports false for every unimplemented capability. Do not treat the
-fixture path as a general Arrow table codec.
+The manifest reports `"shm":"fixture-posix"` and marks the general record paths
+as fixture scoped. Do not treat the fixture path as a general Arrow table codec.
 
 ## Commands
 
 - `zig build`
 - `zig build test`
 - `zig build -Doptimize=ReleaseSafe`
+- `zig build fuzz --fuzz=10000` on Linux x86_64 only
 - `bash scripts/gate.sh`
 - `zig-out/bin/arrowlane-zig describe`
+- `zig-out/bin/arrowlane-zig --version`
+- `zig-out/bin/arrowlane-zig bench --rows 200000 --repeats 3`
+
+## Performance
+
+JSON is the clear Zig win. IPC and ipc-zstd are correct but slower than Python
+and Rust. arrow-cpp is the reference implementation that wins the IPC lanes.
+See `docs/performance.md`.

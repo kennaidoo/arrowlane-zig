@@ -2,12 +2,16 @@
 
 A pure Zig implementation of the arrowlane frame and lane selector.
 
-Status: first build. The frame codec, the int64 schema spike, the general schema
-codec for common Arrow types, the canonical eight-column JSON fixture, the
-one-field IPC spike, the eight-column IPC fixture, the `ipc-zstd` fixture,
-fixture chunk streams, the selector and the C ABI are implemented and tested.
-The general JSON lane, general IPC lane and shared memory are not implemented
-yet. The `describe` manifest reports those capabilities honestly.
+Status: candidate 0.3.0. The frame codec, the int64 schema spike, the general
+schema codec for common Arrow types, the canonical eight-column JSON fixture,
+the one-field IPC spike, the eight-column IPC fixture, the `ipc-zstd` fixture,
+fixture chunk streams, the selector, the C ABI, the POSIX `shm` fixture lane,
+the `bench` command and the fuzz targets are implemented and tested. The
+general JSON lane, general IPC lane and general record batch codec are not
+implemented yet. The `describe` manifest reports those capabilities honestly.
+
+The IPC and `ipc-zstd` lanes are correct but slower than Python and Rust. See
+[docs/performance.md](docs/performance.md). Do not claim IPC parity.
 
 ## Build
 
@@ -44,12 +48,15 @@ zig build -Doptimize=ReleaseSafe
 | JSON chunk stream | Done, fixture scoped | 1,000 rows in 250-row chunks yields 4 frames; Python and Zig read each other's streams |
 | IPC chunk streams | Done, fixture scoped | json, ipc and ipc-zstd each yield 4 batches at 1,000 rows; Python values equal |
 | C ABI | Done, fixture scoped | Python ctypes checks version, select, inspect all lanes, repack and safe frees |
-| General schema codec | Done, common types | Reader and writer for int, float, binary, utf8, bool, decimal, date and timestamp; pyarrow reads both test schemas |
+| General schema codec | Done, common types | Reader and writer for null, int, float, binary, large binary, utf8, large utf8, bool, decimal, date, time, timestamp and duration; pyarrow reads the fixture and one-field schemas |
 | Deterministic selector | Done | 324 of 324 Python selector cases agree on lane and reason |
+| POSIX `shm` fixture lane | Done, POSIX only | Descriptor validation, checked range arithmetic, token check, CRC and segment cleanup; Windows reports unavailable |
+| `bench` command | Done | Median and spread for json, ipc and ipc-zstd; see `docs/performance.md` |
+| Fuzz targets | Linux x86_64 | `zig build fuzz --fuzz=10000`; Windows and macOS are not fuzz-capable |
 | `describe` | Done | Machine-readable JSON with honest capability flags |
 | General JSON lane | Not started | The fixture path is the only JSON table this build accepts |
 | General IPC lane | Not started | The eight-column path is pinned to the canonical fixture |
-| shm | Not started | POSIX only, untested here |
+| General record batch codec | Not started | Record-batch metadata is still the pinned fixture template |
 
 ## Frame layout
 
@@ -93,13 +100,34 @@ same gain floor. On Windows, `shm` is rejected as
 Python reads the Zig frame with `arrowlane.unpack`. The 500 row check compares
 every column and the schema against `interop/check_wire.sample_table`.
 
+`pack` also accepts `--lane ipc` and `--lane ipc-zstd` for the same fixture.
+
+## Performance
+
+The canonical fixture at 200,000 rows, median of three runs, is recorded in
+[docs/performance.md](docs/performance.md). JSON is the clear Zig win. IPC and
+`ipc-zstd` are correct but slower than Python and Rust. The reference
+implementation for those lanes is arrow-cpp through the Rust port. Do not
+claim IPC parity.
+
+## POSIX shared memory
+
+`src/shm_lane.zig` implements the `shm` descriptor and segment operations for
+Linux and macOS. It validates the name, token, checksum and checked range, and
+unlinks the segment after a successful read. Windows reports
+`LaneUnavailable` and `isReady() == false`.
+
+The fixture lane is available through the Zig module and its tests. It is not
+yet wired to a `pack --lane shm` CLI command.
+
 ## Compatibility boundary
 
 The frame layout matches the Python and Rust implementations. The int64 schema
 spike matches the exact pyarrow encapsulated messages. The JSON and IPC lanes
 are pinned to the canonical eight-column fixture and its 480 byte schema
-message. General Arrow schema and record batch encoding are not built yet, so
-this build does not claim wire compatibility beyond that fixture.
+message. The general schema codec covers the common flat types, but the
+record-batch codec is still fixture scoped. This build does not claim general
+Arrow table wire compatibility.
 
 ## Development
 

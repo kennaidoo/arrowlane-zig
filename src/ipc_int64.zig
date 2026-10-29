@@ -18,7 +18,7 @@ pub const Error = error{
     OutOfMemory,
 };
 
-pub const producer = "arrowlane-zig/0.1.0";
+pub const producer = "arrowlane-zig/0.3.0";
 
 const record_batch_template = [_]u8{
     0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

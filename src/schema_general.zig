@@ -1,7 +1,8 @@
-//! General Arrow schema reader and writer for the common fixture types.
+//! General Arrow schema reader and writer for the common Arrow types.
 //!
-//! This owns the Arrow Schema flatbuffer and the encapsulated message. It is a
-//! schema codec only; the record-batch codec remains fixture-scoped.
+//! This owns the Arrow Schema flatbuffer and the encapsulated message. It
+//! supports Null, Int, FloatingPoint, Binary, LargeBinary, Utf8, LargeUtf8,
+//! Bool, Decimal, Date, Time, Timestamp and Duration.
 
 const std = @import("std");
 
@@ -16,14 +17,19 @@ pub const DateUnit = enum { day, millisecond };
 pub const TimeUnit = enum { second, millisecond, microsecond, nanosecond };
 
 pub const DataType = union(enum) {
+    null_type,
     int: struct { bit_width: u8, is_signed: bool },
     floating: FloatPrecision,
     binary,
+    large_binary,
     utf8,
+    large_utf8,
     boolean,
     decimal: struct { precision: i32, scale: i32, bit_width: i32 },
     date: DateUnit,
+    time: struct { unit: TimeUnit, bit_width: i32 },
     timestamp: struct { unit: TimeUnit, timezone: ?[]const u8 },
+    duration: TimeUnit,
 };
 
 pub const Field = struct {
@@ -49,6 +55,7 @@ pub const fixture_fields = [_]Field{
 
 pub const fixture_schema = Schema{ .fields = &fixture_fields };
 
+const type_null: u8 = 1;
 const type_int: u8 = 2;
 const type_floating: u8 = 3;
 const type_binary: u8 = 4;
@@ -56,7 +63,11 @@ const type_utf8: u8 = 5;
 const type_bool: u8 = 6;
 const type_decimal: u8 = 7;
 const type_date: u8 = 8;
+const type_time: u8 = 9;
 const type_timestamp: u8 = 10;
+const type_duration: u8 = 18;
+const type_large_binary: u8 = 19;
+const type_large_utf8: u8 = 20;
 
 const FieldSpec = struct {
     alignment: u8,
@@ -196,29 +207,49 @@ const Builder = struct {
 
 fn typeTable(builder: *Builder, data_type: DataType) Error!struct { tag: u8, pos: usize } {
     switch (data_type) {
+        .null_type => {
+            const table = try builder.allocTable(&.{});
+            return .{ .tag = type_null, .pos = table.pos };
+        },
         .int => |value| {
             const table = try builder.allocTable(&.{ .{ .alignment = 4, .size = 4 }, .{ .alignment = 1, .size = 1 } });
             builder.setI32(table, 0, value.bit_width);
-            builder.setU8(table, 1, @intFromBool(value.is_signed));
+            if (value.is_signed) {
+                builder.setU8(table, 1, 1);
+            } else {
+                builder.setAbsent(table, 1);
+            }
             return .{ .tag = type_int, .pos = table.pos };
         },
         .floating => |value| {
             const table = try builder.allocTable(&.{.{ .alignment = 2, .size = 2 }});
-            const precision: u16 = switch (value) {
-                .half => 0,
-                .single => 1,
-                .double => 2,
-            };
-            builder.setU16(table, 0, precision);
+            if (value == .half) {
+                builder.setAbsent(table, 0);
+            } else {
+                const precision: u16 = switch (value) {
+                    .half => 0,
+                    .single => 1,
+                    .double => 2,
+                };
+                builder.setU16(table, 0, precision);
+            }
             return .{ .tag = type_floating, .pos = table.pos };
         },
         .binary => {
             const table = try builder.allocTable(&.{});
             return .{ .tag = type_binary, .pos = table.pos };
         },
+        .large_binary => {
+            const table = try builder.allocTable(&.{});
+            return .{ .tag = type_large_binary, .pos = table.pos };
+        },
         .utf8 => {
             const table = try builder.allocTable(&.{});
             return .{ .tag = type_utf8, .pos = table.pos };
+        },
+        .large_utf8 => {
+            const table = try builder.allocTable(&.{});
+            return .{ .tag = type_large_utf8, .pos = table.pos };
         },
         .boolean => {
             const table = try builder.allocTable(&.{});
@@ -237,21 +268,52 @@ fn typeTable(builder: *Builder, data_type: DataType) Error!struct { tag: u8, pos
         },
         .date => |value| {
             const table = try builder.allocTable(&.{.{ .alignment = 2, .size = 2 }});
-            builder.setU16(table, 0, if (value == .day) 0 else 1);
+            if (value == .millisecond) {
+                builder.setAbsent(table, 0);
+            } else {
+                builder.setU16(table, 0, 0);
+            }
             return .{ .tag = type_date, .pos = table.pos };
+        },
+        .time => |value| {
+            const table = try builder.allocTable(&.{
+                .{ .alignment = 2, .size = 2 },
+                .{ .alignment = 4, .size = 4 },
+            });
+            if (value.unit == .millisecond) {
+                builder.setAbsent(table, 0);
+            } else {
+                const unit: u16 = switch (value.unit) {
+                    .second => 0,
+                    .millisecond => 1,
+                    .microsecond => 2,
+                    .nanosecond => 3,
+                };
+                builder.setU16(table, 0, unit);
+            }
+            if (value.bit_width == 32) {
+                builder.setAbsent(table, 1);
+            } else {
+                builder.setI32(table, 1, value.bit_width);
+            }
+            return .{ .tag = type_time, .pos = table.pos };
         },
         .timestamp => |value| {
             const table = try builder.allocTable(&.{
                 .{ .alignment = 2, .size = 2 },
                 .{ .alignment = 4, .size = 4 },
             });
-            const unit: u16 = switch (value.unit) {
-                .second => 0,
-                .millisecond => 1,
-                .microsecond => 2,
-                .nanosecond => 3,
-            };
-            builder.setU16(table, 0, unit);
+            if (value.unit == .second) {
+                builder.setAbsent(table, 0);
+            } else {
+                const unit: u16 = switch (value.unit) {
+                    .second => 0,
+                    .millisecond => 1,
+                    .microsecond => 2,
+                    .nanosecond => 3,
+                };
+                builder.setU16(table, 0, unit);
+            }
             if (value.timezone) |timezone| {
                 const position = try builder.addString(timezone);
                 builder.setOffset(table, 1, position);
@@ -259,6 +321,21 @@ fn typeTable(builder: *Builder, data_type: DataType) Error!struct { tag: u8, pos
                 builder.setAbsent(table, 1);
             }
             return .{ .tag = type_timestamp, .pos = table.pos };
+        },
+        .duration => |value| {
+            const table = try builder.allocTable(&.{.{ .alignment = 2, .size = 2 }});
+            if (value == .millisecond) {
+                builder.setAbsent(table, 0);
+            } else {
+                const unit: u16 = switch (value) {
+                    .second => 0,
+                    .millisecond => 1,
+                    .microsecond => 2,
+                    .nanosecond => 3,
+                };
+                builder.setU16(table, 0, unit);
+            }
+            return .{ .tag = type_duration, .pos = table.pos };
         },
     }
 }
@@ -275,7 +352,11 @@ fn writeField(builder: *Builder, field: Field) Error!usize {
     });
     const name = try builder.addString(field.name);
     builder.setOffset(table, 0, name);
-    builder.setU8(table, 1, @intFromBool(field.nullable));
+    if (field.nullable) {
+        builder.setU8(table, 1, 1);
+    } else {
+        builder.setAbsent(table, 1);
+    }
     const type_info = try typeTable(builder, field.data_type);
     builder.setU8(table, 2, type_info.tag);
     builder.setOffset(table, 3, type_info.pos);
@@ -380,42 +461,55 @@ fn readString(buffer: []const u8, target: usize) Error![]const u8 {
     return buffer[target + 4 .. target + 4 + length];
 }
 
+fn decodeTimeUnit(value: u16) Error!TimeUnit {
+    return switch (value) {
+        0 => .second,
+        1 => .millisecond,
+        2 => .microsecond,
+        3 => .nanosecond,
+        else => error.UnsupportedType,
+    };
+}
+
 fn readType(buffer: []const u8, tag: u8, table: usize) Error!DataType {
     return switch (tag) {
+        type_null => .null_type,
         type_int => .{ .int = .{
             .bit_width = @intCast(try getI32(buffer, (try tableField(buffer, table, 0)) orelse return error.BadSchema)),
-            .is_signed = (try getU8(buffer, (try tableField(buffer, table, 1)) orelse return error.BadSchema)) != 0,
+            .is_signed = if (try tableField(buffer, table, 1)) |field| (try getU8(buffer, field)) != 0 else false,
         } },
-        type_floating => .{ .floating = switch (try getU16(buffer, (try tableField(buffer, table, 0)) orelse return error.BadSchema)) {
+        type_floating => .{ .floating = switch (if (try tableField(buffer, table, 0)) |field| try getU16(buffer, field) else 0) {
             0 => .half,
             1 => .single,
             2 => .double,
             else => return error.UnsupportedType,
         } },
         type_binary => .binary,
+        type_large_binary => .large_binary,
         type_utf8 => .utf8,
+        type_large_utf8 => .large_utf8,
         type_bool => .boolean,
         type_decimal => .{ .decimal = .{
             .precision = try getI32(buffer, (try tableField(buffer, table, 0)) orelse return error.BadSchema),
             .scale = try getI32(buffer, (try tableField(buffer, table, 1)) orelse return error.BadSchema),
             .bit_width = if (try tableField(buffer, table, 2)) |field| try getI32(buffer, field) else 128,
         } },
-        type_date => .{ .date = switch (try getU16(buffer, (try tableField(buffer, table, 0)) orelse return error.BadSchema)) {
+        type_date => .{ .date = switch (if (try tableField(buffer, table, 0)) |field| try getU16(buffer, field) else 1) {
             0 => .day,
             1 => .millisecond,
             else => return error.UnsupportedType,
         } },
+        type_time => blk: {
+            const unit = if (try tableField(buffer, table, 0)) |field| try decodeTimeUnit(try getU16(buffer, field)) else .millisecond;
+            const bit_width = if (try tableField(buffer, table, 1)) |field| try getI32(buffer, field) else 32;
+            break :blk .{ .time = .{ .unit = unit, .bit_width = bit_width } };
+        },
         type_timestamp => blk: {
-            const unit: TimeUnit = switch (try getU16(buffer, (try tableField(buffer, table, 0)) orelse return error.BadSchema)) {
-                0 => .second,
-                1 => .millisecond,
-                2 => .microsecond,
-                3 => .nanosecond,
-                else => return error.UnsupportedType,
-            };
+            const unit = if (try tableField(buffer, table, 0)) |field| try decodeTimeUnit(try getU16(buffer, field)) else .second;
             const timezone = if (try offsetTarget(buffer, table, 1)) |target| try readString(buffer, target) else null;
             break :blk .{ .timestamp = .{ .unit = unit, .timezone = timezone } };
         },
+        type_duration => .{ .duration = if (try tableField(buffer, table, 0)) |field| try decodeTimeUnit(try getU16(buffer, field)) else .millisecond },
         else => error.UnsupportedType,
     };
 }
@@ -447,7 +541,7 @@ pub fn parse(allocator: std.mem.Allocator, raw: []const u8) Error!Schema {
         const field_table = element + relative;
         const name_target = (try offsetTarget(buffer, field_table, 0)) orelse return error.BadSchema;
         const name = try readString(buffer, name_target);
-        const nullable = (try getU8(buffer, (try tableField(buffer, field_table, 1)) orelse return error.BadSchema)) != 0;
+        const nullable = if (try tableField(buffer, field_table, 1)) |field| (try getU8(buffer, field)) != 0 else false;
         const type_tag = try getU8(buffer, (try tableField(buffer, field_table, 2)) orelse return error.BadSchema);
         const type_target = (try offsetTarget(buffer, field_table, 3)) orelse return error.BadSchema;
         fields[index] = .{
@@ -471,6 +565,42 @@ test "general schema reads the canonical fixture" {
     try std.testing.expectEqualStrings("amount", schema.fields[5].name);
     try std.testing.expectEqual(@as(i32, 9), schema.fields[5].data_type.decimal.precision);
     try std.testing.expectEqualStrings("UTC", schema.fields[6].data_type.timestamp.timezone.?);
+}
+
+test "general schema default value fallbacks" {
+    const allocator = std.testing.allocator;
+    const schema = Schema{ .fields = &.{
+        .{ .name = "n", .nullable = true, .data_type = .null_type },
+        .{ .name = "lb", .nullable = false, .data_type = .large_binary },
+        .{ .name = "lu", .nullable = false, .data_type = .large_utf8 },
+        .{ .name = "u32", .nullable = false, .data_type = .{ .int = .{ .bit_width = 32, .is_signed = false } } },
+        .{ .name = "f16", .nullable = false, .data_type = .{ .floating = .half } },
+        .{ .name = "d64", .nullable = false, .data_type = .{ .date = .millisecond } },
+        .{ .name = "t32", .nullable = false, .data_type = .{ .time = .{ .unit = .millisecond, .bit_width = 32 } } },
+        .{ .name = "t64", .nullable = false, .data_type = .{ .time = .{ .unit = .nanosecond, .bit_width = 64 } } },
+        .{ .name = "ts", .nullable = false, .data_type = .{ .timestamp = .{ .unit = .second, .timezone = null } } },
+        .{ .name = "dur", .nullable = false, .data_type = .{ .duration = .millisecond } },
+    } };
+    const encoded = try encode(allocator, schema);
+    defer allocator.free(encoded);
+    const decoded = try parse(allocator, encoded);
+    defer allocator.free(decoded.fields);
+    try std.testing.expectEqual(@as(usize, 10), decoded.fields.len);
+    try std.testing.expect(decoded.fields[0].nullable);
+    try std.testing.expect(!decoded.fields[1].nullable);
+    try std.testing.expect(decoded.fields[0].data_type == .null_type);
+    try std.testing.expect(decoded.fields[1].data_type == .large_binary);
+    try std.testing.expect(decoded.fields[2].data_type == .large_utf8);
+    try std.testing.expect(!decoded.fields[3].data_type.int.is_signed);
+    try std.testing.expect(decoded.fields[4].data_type.floating == .half);
+    try std.testing.expect(decoded.fields[5].data_type.date == .millisecond);
+    try std.testing.expect(decoded.fields[6].data_type.time.unit == .millisecond);
+    try std.testing.expectEqual(@as(i32, 32), decoded.fields[6].data_type.time.bit_width);
+    try std.testing.expect(decoded.fields[7].data_type.time.unit == .nanosecond);
+    try std.testing.expectEqual(@as(i32, 64), decoded.fields[7].data_type.time.bit_width);
+    try std.testing.expect(decoded.fields[8].data_type.timestamp.unit == .second);
+    try std.testing.expect(decoded.fields[8].data_type.timestamp.timezone == null);
+    try std.testing.expect(decoded.fields[9].data_type.duration == .millisecond);
 }
 
 test "general schema round trip" {

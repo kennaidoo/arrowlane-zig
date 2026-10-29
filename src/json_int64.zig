@@ -17,7 +17,7 @@ pub const Error = error{
     OutOfMemory,
 };
 
-pub const producer = "arrowlane-zig/0.1.0";
+pub const producer = "arrowlane-zig/0.3.0";
 
 pub fn encode(allocator: std.mem.Allocator, values: []const ?i64) Error![]u8 {
     var nullable = false;

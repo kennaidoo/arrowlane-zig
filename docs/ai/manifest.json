@@ -2,8 +2,8 @@
   "schema_version": 1,
   "kind": "arrowlane",
   "name": "arrowlane-zig",
-  "version": "0.1.0",
-  "status": "first-build",
+  "version": "0.3.0",
+  "status": "release-candidate",
   "frame": {
     "magic": "ALN1",
     "version": 1,
@@ -21,7 +21,7 @@
     "json": "fixture",
     "ipc": "fixture",
     "ipc-zstd": "fixture",
-    "shm": false
+    "shm": "fixture-posix"
   },
   "selector": {
     "implemented": true,
@@ -32,13 +32,25 @@
     "implemented": "general",
     "nullable_variants": true,
     "fixture_schema_bytes": 480,
-    "common_types": ["int", "floating", "binary", "utf8", "bool", "decimal", "date", "timestamp"],
-    "general_arrow_schema": true
+    "common_types": ["null", "int", "floating", "binary", "large_binary", "utf8", "large_utf8", "bool", "decimal", "date", "time", "timestamp", "duration"],
+    "general_arrow_schema": true,
+    "flatbuffer_defaults": true
   },
   "c_abi": true,
+  "bench": true,
+  "fuzz": {
+    "implemented": "linux-x86_64",
+    "command": "zig build fuzz --fuzz=10000"
+  },
+  "shm": {
+    "implemented": "fixture-posix",
+    "cli": false,
+    "platforms": ["linux", "macos"]
+  },
+  "performance": "docs/performance.md",
   "platforms": {
-    "windows": "frame, general schema, fixture lanes, chunks, selector and C ABI tested",
-    "linux": "not tested",
-    "macos": "not tested"
+    "windows": "frame, general schema, fixture lanes, chunks, selector, bench and C ABI tested; shm unavailable",
+    "linux": "CI test matrix; fixture shm lane and fuzz gate",
+    "macos": "CI test matrix; fixture shm lane; fuzz not supported"
   }
 }

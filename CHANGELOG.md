@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0
+## 0.3.0
 
 - Add the 38 byte frame codec with checked prefix lengths, CRC32 and JSON header
   validation.
@@ -15,11 +15,20 @@
 - Add the `ipc-zstd` fixture lane with libzstd encode and std decode.
 - Add fixture chunk streams for json, ipc and ipc-zstd with ordered `chunk`
   metadata.
-- Add the general schema reader and writer for common Arrow types.
+- Add the general schema reader and writer for common Arrow types, including
+  FlatBuffers default-value handling.
 - Add the fixture C ABI and the Python ctypes check.
 - Add the deterministic selector with the shipped cost model.
-- Add `describe`, `select`, `pack`, `unpack`, `pack-int64`, `unpack-int64` and
-  `schema-int64` commands.
-- Add formatting, test and release build gates.
+- Add the POSIX `shm` fixture lane with descriptor validation, checked ranges,
+  token comparison, CRC and segment cleanup.
+- Add the `bench` command and the measured comparison in `docs/performance.md`.
+- Add parser fuzz targets and the Linux x86_64 fuzz gate.
+- Add `describe`, `select`, `pack`, `unpack`, `pack-int64`, `unpack-int64`,
+  `schema-int64`, `schema-general-fixture` and `bench` commands.
+- Add formatting, test, release build and binary size gates.
+- Align the package version with `0.3.0` and accept `--version` as well as
+  `version`.
 
-Not included: JSON lane, IPC lane, chunks, zstd, shared memory and the C ABI.
+Not included: general JSON lane, general IPC lane and the general record batch
+codec. IPC and ipc-zstd are correct but slower than Python and Rust. The
+arrow-cpp reference wins those lanes.

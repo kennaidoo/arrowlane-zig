@@ -18,7 +18,7 @@ pub const Error = error{
     OutOfMemory,
 };
 
-pub const producer = "arrowlane-zig/0.1.0";
+pub const producer = "arrowlane-zig/0.3.0";
 pub const level: c_int = 3;
 
 pub const Summary = struct {

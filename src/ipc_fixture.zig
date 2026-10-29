@@ -20,7 +20,7 @@ pub const Error = error{
     OutOfMemory,
 };
 
-pub const producer = "arrowlane-zig/0.1.0";
+pub const producer = "arrowlane-zig/0.3.0";
 pub const schema_bytes = 480;
 pub const metadata_bytes = 504;
 pub const node_count = 8;

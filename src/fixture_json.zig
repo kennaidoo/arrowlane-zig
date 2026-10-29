@@ -17,7 +17,7 @@ pub const Error = error{
 };
 
 pub const columns: usize = 8;
-pub const producer = "arrowlane-zig/0.1.0";
+pub const producer = "arrowlane-zig/0.3.0";
 
 pub const Summary = struct {
     rows: u64,
@@ -49,27 +49,27 @@ pub fn encodeRange(allocator: std.mem.Allocator, start: usize, rows: usize, chun
 
     var payload: std.ArrayList(u8) = .empty;
     defer payload.deinit(allocator);
+    payload.ensureTotalCapacity(allocator, rows * 215) catch return error.OutOfMemory;
+
+    var buf: [256]u8 = undefined;
     for (0..rows) |index| {
         const absolute = start + index;
         if (index > 0) try appendText(&payload, allocator, "\n");
-        const name = if (absolute % 7 == 0)
-            allocator.dupe(u8, "null") catch return error.OutOfMemory
-        else
-            std.fmt.allocPrint(allocator, "\"row-{d}\"", .{absolute}) catch return error.OutOfMemory;
-        defer allocator.free(name);
-        const day = std.fmt.allocPrint(
-            allocator,
-            "\"2026-01-{d:0>2}\"",
-            .{absolute % 28 + 1},
-        ) catch return error.OutOfMemory;
-        defer allocator.free(day);
+        const day_num = absolute % 28 + 1;
+        const ok_str = if (absolute % 2 == 0) "true" else "false";
         const score = @as(f64, @floatFromInt(absolute)) / 3.0;
-        const row = std.fmt.allocPrint(
-            allocator,
-            "{{\"id\":{d},\"name\":{s},\"score\":{d},\"ok\":{s},\"day\":{{\"$\":\"date\",\"v\":{s}}},\"amount\":{{\"$\":\"dec\",\"v\":\"12.34\"}},\"ts\":{{\"$\":\"ts\",\"v\":\"2026-10-28T12:00:00+00:00\"}},\"blob\":{{\"$\":\"bin\",\"v\":\"AAEC\"}}}}",
-            .{ absolute, name, score, if (absolute % 2 == 0) "true" else "false", day },
-        ) catch return error.OutOfMemory;
-        defer allocator.free(row);
+        const row = if (absolute % 7 == 0)
+            std.fmt.bufPrint(
+                &buf,
+                "{{\"id\":{d},\"name\":null,\"score\":{d},\"ok\":{s},\"day\":{{\"$\":\"date\",\"v\":\"2026-01-{d:0>2}\"}},\"amount\":{{\"$\":\"dec\",\"v\":\"12.34\"}},\"ts\":{{\"$\":\"ts\",\"v\":\"2026-10-28T12:00:00+00:00\"}},\"blob\":{{\"$\":\"bin\",\"v\":\"AAEC\"}}}}",
+                .{ absolute, score, ok_str, day_num },
+            ) catch return error.BadFrame
+        else
+            std.fmt.bufPrint(
+                &buf,
+                "{{\"id\":{d},\"name\":\"row-{d}\",\"score\":{d},\"ok\":{s},\"day\":{{\"$\":\"date\",\"v\":\"2026-01-{d:0>2}\"}},\"amount\":{{\"$\":\"dec\",\"v\":\"12.34\"}},\"ts\":{{\"$\":\"ts\",\"v\":\"2026-10-28T12:00:00+00:00\"}},\"blob\":{{\"$\":\"bin\",\"v\":\"AAEC\"}}}}",
+                .{ absolute, absolute, score, ok_str, day_num },
+            ) catch return error.BadFrame;
         try appendText(&payload, allocator, row);
     }
 
@@ -85,30 +85,24 @@ pub fn encodeRange(allocator: std.mem.Allocator, start: usize, rows: usize, chun
     };
 }
 
-fn isTagged(value: std.json.Value, tag: []const u8) bool {
-    const object = switch (value) {
-        .object => |object| object,
-        else => return false,
-    };
-    if (object.count() != 2) return false;
-    const tag_value = object.get("$") orelse return false;
-    const payload_value = object.get("v") orelse return false;
-    const tag_text = switch (tag_value) {
-        .string => |text| text,
-        else => return false,
-    };
-    if (!std.mem.eql(u8, tag_text, tag)) return false;
-    return switch (payload_value) {
-        .string => true,
-        else => false,
-    };
-}
+const TaggedObj = struct {
+    @"$": []const u8,
+    v: []const u8,
+};
 
-fn isIntegerOrFloat(value: std.json.Value) bool {
-    return switch (value) {
-        .integer, .float => true,
-        else => false,
-    };
+const FixtureRow = struct {
+    id: i64,
+    name: ?[]const u8 = null,
+    score: f64,
+    ok: bool,
+    day: TaggedObj,
+    amount: TaggedObj,
+    ts: TaggedObj,
+    blob: TaggedObj,
+};
+
+fn isTaggedObj(value: TaggedObj, tag: []const u8) bool {
+    return std.mem.eql(u8, value.@"$", tag);
 }
 
 pub fn validate(allocator: std.mem.Allocator, wire: []const u8) Error!Summary {
@@ -136,42 +130,18 @@ pub fn validate(allocator: std.mem.Allocator, wire: []const u8) Error!Summary {
     if (!std.mem.eql(u8, schema_text, fixture_schema.schema_b64)) return error.BadSchema;
 
     var count: u64 = 0;
+    var row_buf: [1024]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&row_buf);
     var lines = std.mem.splitScalar(u8, parsed_frame.payload, '\n');
     while (lines.next()) |line| {
         if (line.len == 0) continue;
-        var row = std.json.parseFromSlice(std.json.Value, allocator, line, .{}) catch return error.BadPayload;
-        defer row.deinit();
-        const object = switch (row.value) {
-            .object => |value| value,
-            else => return error.BadPayload,
-        };
-        if (object.count() != columns) return error.BadPayload;
-
-        const id = object.get("id") orelse return error.BadPayload;
-        switch (id) {
-            .integer => {},
-            else => return error.BadPayload,
-        }
-        const name = object.get("name") orelse return error.BadPayload;
-        switch (name) {
-            .string, .null => {},
-            else => return error.BadPayload,
-        }
-        const score = object.get("score") orelse return error.BadPayload;
-        if (!isIntegerOrFloat(score)) return error.BadPayload;
-        const ok = object.get("ok") orelse return error.BadPayload;
-        switch (ok) {
-            .bool => {},
-            else => return error.BadPayload,
-        }
-        const day = object.get("day") orelse return error.BadPayload;
-        if (!isTagged(day, "date")) return error.BadPayload;
-        const amount = object.get("amount") orelse return error.BadPayload;
-        if (!isTagged(amount, "dec")) return error.BadPayload;
-        const ts = object.get("ts") orelse return error.BadPayload;
-        if (!isTagged(ts, "ts")) return error.BadPayload;
-        const blob = object.get("blob") orelse return error.BadPayload;
-        if (!isTagged(blob, "bin")) return error.BadPayload;
+        fba.reset();
+        const row_alloc = fba.allocator();
+        const row = std.json.parseFromSliceLeaky(FixtureRow, row_alloc, line, .{ .ignore_unknown_fields = false }) catch return error.BadPayload;
+        if (!isTaggedObj(row.day, "date")) return error.BadPayload;
+        if (!isTaggedObj(row.amount, "dec")) return error.BadPayload;
+        if (!isTaggedObj(row.ts, "ts")) return error.BadPayload;
+        if (!isTaggedObj(row.blob, "bin")) return error.BadPayload;
         count += 1;
     }
     if (count != parsed_frame.rows) return error.BadFrame;

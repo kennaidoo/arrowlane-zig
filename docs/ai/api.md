@@ -161,14 +161,43 @@ all three lanes, repack to IPC and ipc-zstd, and safe frees.
 
 ## General schema
 
-`src/schema_general.zig` reads and writes Arrow Schema flatbuffers for `int`,
-`floating`, `binary`, `utf8`, `bool`, `decimal`, `date` and `timestamp`.
+`src/schema_general.zig` reads and writes Arrow Schema flatbuffers for `null`,
+`int`, `floating`, `binary`, `large_binary`, `utf8`, `large_utf8`, `bool`,
+`decimal`, `date`, `time`, `timestamp` and `duration`. It applies the
+FlatBuffers defaults when a field is omitted: `nullable=false`,
+`Int.is_signed=false`, `FloatingPoint.precision=HALF`, `Date.unit=MILLISECOND`,
+`Time.unit=MILLISECOND`, `Time.bitWidth=32`, `Timestamp.unit=SECOND` and
+`Duration.unit=MILLISECOND`.
+
 `zig-out/bin/arrowlane-zig schema-general-fixture` emits the canonical
 eight-field schema, and `schema-general-int64` emits a one-field non-nullable
 schema. `interop/check_zig_schema.py` checks both outputs with pyarrow.
 
+## POSIX shared memory
+
+`src/shm_lane.zig` owns the lane 4 fixture path. The descriptor travels as JSON
+with `name`, `length`, `crc32`, `token` and `offset`. The reader checks the
+token in constant time, checks the range with overflow guards, verifies CRC32,
+unlinks the segment and returns an owned payload.
+
+`arrowlane.shm_lane.isPosix()` and `isReady()` report platform availability.
+Windows returns `error.LaneUnavailable` for segment operations. The lane is not
+wired to a `pack --lane shm` CLI command yet.
+
+## Benchmark and fuzz
+
+`zig-out/bin/arrowlane-zig bench --rows N --repeats R` prints
+`lane wire_bytes enc_ms dec_ms` for `json`, `ipc` and `ipc-zstd`. The measured
+comparison is in `docs/performance.md`. JSON wins. IPC and `ipc-zstd` are
+correct but slower than Python and Rust, and arrow-cpp is the reference
+implementation that wins those lanes.
+
+`zig build fuzz --fuzz=10000` runs the parser fuzz targets on Linux x86_64.
+Windows and macOS do not support Zig 0.17 fuzz mode. Normal `zig build test`
+runs only the seed corpus.
+
 ## Not implemented
 
-The general JSON lane, general IPC lane and shared memory are not in this build.
-The record-batch codec is fixture scoped. The `describe` manifest reports those
-capabilities honestly.
+The general JSON lane, general IPC lane and general record batch codec are not
+in this build. The record-batch codec is fixture scoped. The `describe` manifest
+reports those capabilities honestly.

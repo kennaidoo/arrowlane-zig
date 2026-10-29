@@ -2,7 +2,7 @@ const std = @import("std");
 const arrowlane = @import("arrowlane");
 
 const MANIFEST =
-    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.1.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"general","json":"fixture","ipc":"fixture","ipc_zstd":"fixture","shm":false,"chunks":"fixture","c_abi":true}}
+    \\{"kind":"arrowlane","name":"arrowlane-zig","version":"0.3.0","frame":{"magic":"ALN1","version":1,"prefix_bytes":38,"max_header_bytes":65535,"max_payload_bytes":536870912,"max_uncompressed_bytes":1073741824},"streaming":{"default_chunk_rows":50000,"max_chunks":1000000},"lanes":["json","ipc","ipc-zstd","shm"],"capabilities":{"frame":true,"select":true,"schema":"general","json":"fixture","ipc":"fixture","ipc_zstd":"fixture","shm":"fixture-posix","chunks":"fixture","c_abi":true,"bench":true,"fuzz":"linux-x86_64"}}
 ;
 
 fn usage() void {
@@ -26,8 +26,10 @@ fn usage() void {
         \\  pack-chunks --rows N --chunk-rows M --out FILE  write JSON chunks
         \\         [--lane json|ipc|ipc-zstd]
         \\  unpack-chunks --in FILE [--json]                validate chunks
+        \\  bench [--rows N] [--repeats R]  benchmark the three fixture lanes
         \\  schema-int64 [--nullable]  write the int64 schema spike to stdout
         \\  schema-general-fixture     write the general eight-field schema to stdout
+        \\  schema-general-types       write the default-value type matrix to stdout
         \\  version                   print the version
         \\
     , .{});
@@ -100,7 +102,7 @@ pub fn main(init: std.process.Init) !void {
         try writer.flush();
         return;
     }
-    if (std.mem.eql(u8, command, "version")) {
+    if (std.mem.eql(u8, command, "version") or std.mem.eql(u8, command, "--version")) {
         try writer.print("{s} {s}\n", .{ arrowlane.NAME, arrowlane.VERSION });
         try writer.flush();
         return;
@@ -124,6 +126,24 @@ pub fn main(init: std.process.Init) !void {
         return;
     }
 
+    if (std.mem.eql(u8, command, "schema-general-types")) {
+        const fields = &[_]arrowlane.schema_general.Field{
+            .{ .name = "n", .nullable = true, .data_type = .null_type },
+            .{ .name = "lb", .nullable = false, .data_type = .large_binary },
+            .{ .name = "lu", .nullable = false, .data_type = .large_utf8 },
+            .{ .name = "u32", .nullable = false, .data_type = .{ .int = .{ .bit_width = 32, .is_signed = false } } },
+            .{ .name = "f16", .nullable = false, .data_type = .{ .floating = .half } },
+            .{ .name = "d64", .nullable = false, .data_type = .{ .date = .millisecond } },
+            .{ .name = "t32", .nullable = false, .data_type = .{ .time = .{ .unit = .millisecond, .bit_width = 32 } } },
+            .{ .name = "t64", .nullable = false, .data_type = .{ .time = .{ .unit = .nanosecond, .bit_width = 64 } } },
+            .{ .name = "ts", .nullable = false, .data_type = .{ .timestamp = .{ .unit = .second, .timezone = null } } },
+            .{ .name = "dur", .nullable = false, .data_type = .{ .duration = .millisecond } },
+        };
+        const encoded = try arrowlane.schema_general.encode(init.arena.allocator(), .{ .fields = fields });
+        try writer.writeAll(encoded);
+        try writer.flush();
+        return;
+    }
     if (std.mem.eql(u8, command, "schema-general-fixture")) {
         const encoded = try arrowlane.schema_general.encode(init.arena.allocator(), arrowlane.schema_general.fixture_schema);
         try writer.writeAll(encoded);
@@ -489,6 +509,69 @@ pub fn main(init: std.process.Init) !void {
             try writer.print("lane={s} rows={d} chunks={d} wire_bytes={d}\n", .{ summary.lane, summary.rows, summary.chunks, data.len });
         }
         try writer.flush();
+        return;
+    }
+    if (std.mem.eql(u8, command, "bench")) {
+        var rows: usize = 200_000;
+        var repeats: usize = 5;
+        var index: usize = 2;
+        while (index < args.len) {
+            const arg = args[index];
+            if (std.mem.eql(u8, arg, "--rows") or std.mem.eql(u8, arg, "--repeats")) {
+                if (index + 1 >= args.len) return error.MissingValue;
+                const value = args[index + 1];
+                if (std.mem.eql(u8, arg, "--rows")) {
+                    rows = try std.fmt.parseInt(usize, value, 10);
+                } else {
+                    repeats = try std.fmt.parseInt(usize, value, 10);
+                }
+                index += 2;
+            } else {
+                return error.UnknownOption;
+            }
+        }
+        if (repeats == 0) repeats = 1;
+        try writer.print("rows={d} repeats={d}\n", .{ rows, repeats });
+        try writer.print("lane         wire_bytes       enc_ms       dec_ms\n", .{});
+        const lanes = [_][]const u8{ "json", "ipc", "ipc-zstd" };
+        const enc_samples = try init.gpa.alloc(f64, repeats);
+        defer init.gpa.free(enc_samples);
+        const dec_samples = try init.gpa.alloc(f64, repeats);
+        defer init.gpa.free(dec_samples);
+
+        for (lanes) |lane| {
+            var wire_len: usize = 0;
+            for (0..repeats) |rep| {
+                const start_enc = std.Io.Clock.Timestamp.now(init.io, .awake);
+                const wire = if (std.mem.eql(u8, lane, "ipc-zstd"))
+                    try arrowlane.ipc_zstd.encodeFrame(init.gpa, rows)
+                else if (std.mem.eql(u8, lane, "ipc"))
+                    try arrowlane.ipc_fixture.encodeFrame(init.gpa, rows)
+                else
+                    try arrowlane.fixture_json.encodeSample(init.gpa, rows);
+                defer init.gpa.free(wire);
+                const end_enc = std.Io.Clock.Timestamp.now(init.io, .awake);
+                enc_samples[rep] = @as(f64, @floatFromInt(start_enc.durationTo(end_enc).raw.nanoseconds)) / 1_000_000.0;
+                wire_len = wire.len;
+
+                const start_dec = std.Io.Clock.Timestamp.now(init.io, .awake);
+                if (std.mem.eql(u8, lane, "ipc-zstd")) {
+                    _ = try arrowlane.ipc_zstd.decodeFrame(init.gpa, wire);
+                } else if (std.mem.eql(u8, lane, "ipc")) {
+                    _ = try arrowlane.ipc_fixture.decodeFrame(init.gpa, wire);
+                } else {
+                    _ = try arrowlane.fixture_json.validate(init.gpa, wire);
+                }
+                const end_dec = std.Io.Clock.Timestamp.now(init.io, .awake);
+                dec_samples[rep] = @as(f64, @floatFromInt(start_dec.durationTo(end_dec).raw.nanoseconds)) / 1_000_000.0;
+            }
+            std.mem.sort(f64, enc_samples, {}, comptime std.sort.asc(f64));
+            std.mem.sort(f64, dec_samples, {}, comptime std.sort.asc(f64));
+            const med_enc = enc_samples[repeats / 2];
+            const med_dec = dec_samples[repeats / 2];
+            try writer.print("{s:<10} {d:>12} {d:>12.3} {d:>12.3}\n", .{ lane, wire_len, med_enc, med_dec });
+            try writer.flush();
+        }
         return;
     }
     _ = &buffer;

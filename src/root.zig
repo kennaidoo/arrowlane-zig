@@ -12,6 +12,7 @@ pub const json_int64 = @import("json_int64.zig");
 pub const schema = @import("schema.zig");
 pub const schema_general = @import("schema_general.zig");
 pub const select = @import("select.zig");
+pub const shm_lane = @import("shm_lane.zig");
 
-pub const VERSION = "0.1.0";
+pub const VERSION = "0.3.0";
 pub const NAME = "arrowlane-zig";

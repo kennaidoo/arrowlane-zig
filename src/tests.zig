@@ -13,5 +13,7 @@ test {
     _ = @import("schema.zig");
     _ = @import("schema_general.zig");
     _ = @import("select.zig");
+    _ = @import("shm_lane.zig");
+    _ = @import("fuzz.zig");
     _ = @import("root.zig");
 }

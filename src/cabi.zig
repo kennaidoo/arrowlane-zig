@@ -68,7 +68,7 @@ fn summaryFor(allocator_arg: std.mem.Allocator, wire: []const u8) ?struct { rows
 }
 
 export fn al_version() [*:0]const u8 {
-    return "0.1.0";
+    return "0.3.0";
 }
 
 export fn al_select(
