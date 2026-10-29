@@ -1,6 +1,7 @@
 .zig-cache/
 zig-out/
 vendor/
+.hermes/
 __pycache__/
 *.pyc
 *.pdb
