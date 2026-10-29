@@ -48,3 +48,17 @@ jobs:
       - run: zig build test
       - run: zig build fuzz
       - run: zig build -Doptimize=ReleaseSafe
+
+  windows-arm64-build:
+    name: windows-arm64-build
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+      - name: Fetch zstd
+        run: bash tools/fetch-zstd.sh
+      - name: Build ARM64
+        run: zig build -Dtarget=aarch64-windows -Doptimize=ReleaseSafe
