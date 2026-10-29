@@ -116,11 +116,13 @@ Linux and macOS. It is not wired to the CLI. Windows returns
 On Linux x86_64:
 
 ```bash
-zig build fuzz --fuzz=10000
+zig build fuzz
 ```
 
-Windows and macOS do not support Zig 0.17 fuzz mode. Normal `zig build test`
-runs only the seed corpus.
+This is a deterministic 10,000-input mutation gate over the frame, shm
+descriptor and general schema parsers. Zig 0.17's coverage-guided runner is
+not used because it crashes in `fuzzer_new_input` before the target runs.
+Windows and macOS do not support Zig 0.17 fuzz mode.
 
 ## C ABI
 

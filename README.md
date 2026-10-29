@@ -52,7 +52,7 @@ zig build -Doptimize=ReleaseSafe
 | Deterministic selector | Done | 324 of 324 Python selector cases agree on lane and reason |
 | POSIX `shm` fixture lane | Done, POSIX only | Descriptor validation, checked range arithmetic, token check, CRC and segment cleanup; Windows reports unavailable |
 | `bench` command | Done | Median and spread for json, ipc and ipc-zstd; see `docs/performance.md` |
-| Fuzz targets | Linux x86_64 | `zig build fuzz --fuzz=10000`; Windows and macOS are not fuzz-capable |
+| Fuzz targets | Linux x86_64 | Deterministic 10,000-input mutation gate over frame, shm and schema parsers; Zig 0.17 coverage-guided runner is not used |
 | `describe` | Done | Machine-readable JSON with honest capability flags |
 | General JSON lane | Not started | The fixture path is the only JSON table this build accepts |
 | General IPC lane | Not started | The eight-column path is pinned to the canonical fixture |

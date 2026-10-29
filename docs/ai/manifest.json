@@ -40,7 +40,9 @@
   "bench": true,
   "fuzz": {
     "implemented": "linux-x86_64",
-    "command": "zig build fuzz --fuzz=10000"
+    "command": "zig build fuzz",
+    "coverage_guided": false,
+    "inputs": 10000
   },
   "shm": {
     "implemented": "fixture-posix",

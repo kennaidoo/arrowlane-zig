@@ -98,12 +98,11 @@ pub fn build(b: *std.Build) void {
                 .root_source_file = b.path("src/fuzz.zig"),
                 .target = target,
                 .optimize = .Debug,
-                .fuzz = true,
             }),
             .filters = &.{"fuzz wire parsers"},
         });
         const fuzz_run = b.addRunArtifact(fuzz_tests);
-        const fuzz_step = b.step("fuzz", "Coverage-guided parser fuzzing");
+        const fuzz_step = b.step("fuzz", "Deterministic parser fuzz gate");
         fuzz_step.dependOn(&fuzz_run.step);
     }
 }

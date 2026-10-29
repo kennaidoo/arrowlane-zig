@@ -22,7 +22,9 @@
 - Add the POSIX `shm` fixture lane with descriptor validation, checked ranges,
   token comparison, CRC and segment cleanup.
 - Add the `bench` command and the measured comparison in `docs/performance.md`.
-- Add parser fuzz targets and the Linux x86_64 fuzz gate.
+- Add a deterministic parser fuzz gate with 10,000 generated inputs and a
+  Linux x86_64 CI job. Zig 0.17's coverage-guided runner is not used because it
+  crashes in `fuzzer_new_input` before the target runs.
 - Add `describe`, `select`, `pack`, `unpack`, `pack-int64`, `unpack-int64`,
   `schema-int64`, `schema-general-fixture` and `bench` commands.
 - Add formatting, test, release build and binary size gates.

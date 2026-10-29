@@ -192,9 +192,10 @@ comparison is in `docs/performance.md`. JSON wins. IPC and `ipc-zstd` are
 correct but slower than Python and Rust, and arrow-cpp is the reference
 implementation that wins those lanes.
 
-`zig build fuzz --fuzz=10000` runs the parser fuzz targets on Linux x86_64.
-Windows and macOS do not support Zig 0.17 fuzz mode. Normal `zig build test`
-runs only the seed corpus.
+`zig build fuzz` runs a deterministic 10,000-input mutation gate over the
+frame, shm descriptor and general schema parsers on Linux x86_64. Zig 0.17's
+coverage-guided runner is not used because it crashes in `fuzzer_new_input`
+before the target runs. Windows and macOS do not support Zig 0.17 fuzz mode.
 
 ## Not implemented
 
