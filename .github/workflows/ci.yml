@@ -84,5 +84,5 @@ jobs:
             tar -xJf /tmp/zig.tar.xz -C /opt
             ln -s /opt/zig-aarch64-freebsd-0.17.0/zig /usr/local/bin/zig
             bash tools/fetch-zstd.sh
-            zig build test
+            zig build test -Ddebug-tests --summary all
             zig build -Doptimize=ReleaseSafe

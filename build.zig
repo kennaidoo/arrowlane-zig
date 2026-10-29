@@ -44,6 +44,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const strip = b.option(bool, "strip", "Strip binary symbols") orelse false;
     const c_abi = b.option(bool, "c-abi", "Build the C ABI shared and static libraries") orelse true;
+    const debug_tests = b.option(bool, "debug-tests", "Build unit tests with Debug optimization") orelse false;
 
     const library = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
@@ -89,7 +90,7 @@ pub fn build(b: *std.Build) void {
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/tests.zig"),
             .target = target,
-            .optimize = .ReleaseSafe,
+            .optimize = if (debug_tests) .Debug else .ReleaseSafe,
         }),
     });
     addZstd(b, tests.root_module);
