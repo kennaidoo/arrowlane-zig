@@ -62,3 +62,26 @@ jobs:
         run: bash tools/fetch-zstd.sh
       - name: Build ARM64
         run: zig build -Dtarget=aarch64-windows -Doptimize=ReleaseSafe
+
+  freebsd-arm64:
+    name: freebsd-arm64
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          release: "15"
+          arch: aarch64
+          mem: 8192
+          prepare: |
+            pkg install -y bash curl xz
+          run: |
+            export ARROWLAND_SHM_DIR=/tmp/arrowlane-shm
+            mkdir -p "$ARROWLAND_SHM_DIR"
+            curl -fsSL https://ziglang.org/download/0.17.0/zig-aarch64-freebsd-0.17.0.tar.xz -o /tmp/zig.tar.xz
+            tar -xJf /tmp/zig.tar.xz -C /opt
+            ln -s /opt/zig-aarch64-freebsd-0.17.0/zig /usr/local/bin/zig
+            bash tools/fetch-zstd.sh
+            zig build test
+            zig build -Doptimize=ReleaseSafe
