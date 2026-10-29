@@ -2,10 +2,10 @@
 
 ## Unreleased
 
-- Add FreeBSD to the POSIX shm predicate. The predicate remains, but FreeBSD is not a CI-verified target.
+- Add FreeBSD to the POSIX shm predicate. FreeBSD is not a supported target.
 - Enable the deterministic fuzz gate on Linux arm64.
 - Document ARM64 and Apple silicon support boundaries.
-- Remove the FreeBSD arm64 CI job and public support claim because the test job did not complete.
+- Remove FreeBSD from the supported platform list because the target is not verified.
 - Decode `ipc-zstd` with libzstd instead of the Zig standard-library decoder.
 - Remove per-row formatting from the IPC name writer.
 - Add `-Dstrip` and `-Dc-abi` build options.
@@ -33,9 +33,9 @@
 - Add the POSIX `shm` fixture lane with descriptor validation, checked ranges,
   token comparison, CRC and segment cleanup.
 - Add the `bench` command and the measured comparison in `docs/performance.md`.
-- Add a deterministic parser fuzz gate with 10,000 generated inputs and a
-  Linux x86_64 CI job. Zig 0.17's coverage-guided runner is not used because it
-  crashes in `fuzzer_new_input` before the target runs.
+- Add a deterministic parser fuzz gate with 10,000 generated inputs on Linux.
+  Zig 0.17's coverage-guided runner is not used because it crashes in
+  `fuzzer_new_input` before the target runs.
 - Add `describe`, `select`, `pack`, `unpack`, `pack-int64`, `unpack-int64`,
   `schema-int64`, `schema-general-fixture` and `bench` commands.
 - Add formatting, test, release build and binary size gates.

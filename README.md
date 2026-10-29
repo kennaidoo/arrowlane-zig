@@ -66,12 +66,12 @@ zig build -Doptimize=ReleaseSafe
 
 ## Architecture support
 
-| Architecture | Status |
+| Architecture | Support |
 |---|---|
-| Linux x86_64 | Existing CI |
-| Linux aarch64 | CI test and fuzz |
-| macOS arm64 | CI test |
-| Windows x86_64 | CI test |
+| Linux x86_64 | Supported |
+| Linux aarch64 | Supported |
+| macOS arm64 | Supported |
+| Windows x86_64 | Supported |
 | Windows aarch64 | Cross-build only |
 
 ## Frame layout
