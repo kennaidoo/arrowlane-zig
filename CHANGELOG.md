@@ -2,9 +2,10 @@
 
 ## Unreleased
 
-- Add FreeBSD to the POSIX shm predicate.
+- Add FreeBSD to the POSIX shm predicate. The predicate remains, but FreeBSD is not a CI-verified target.
 - Enable the deterministic fuzz gate on Linux arm64.
-- Document ARM64, Apple silicon and FreeBSD support boundaries.
+- Document ARM64 and Apple silicon support boundaries.
+- Remove the FreeBSD arm64 CI job and public support claim because the test job did not complete.
 - Decode `ipc-zstd` with libzstd instead of the Zig standard-library decoder.
 - Remove per-row formatting from the IPC name writer.
 - Add `-Dstrip` and `-Dc-abi` build options.

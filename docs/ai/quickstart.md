@@ -108,7 +108,7 @@ arrow-cpp reference wins those lanes.
 ## POSIX shared memory
 
 The `shm` fixture lane is available through `src/shm_lane.zig` and its tests on
-Linux, macOS and FreeBSD. macOS and FreeBSD need `ARROWLAND_SHM_DIR`. It is not
+Linux and macOS. macOS needs `ARROWLAND_SHM_DIR`. It is not
 wired to the CLI. Windows returns `error.LaneUnavailable`.
 
 ## Fuzz
@@ -122,7 +122,7 @@ zig build fuzz
 This is a deterministic 10,000-input mutation gate over the frame, shm
 descriptor and general schema parsers. Zig 0.17's coverage-guided runner is
 not used because it crashes in `fuzzer_new_input` before the target runs.
-Windows, macOS and FreeBSD do not support Zig 0.17 fuzz mode.
+Windows and macOS do not support Zig 0.17 fuzz mode.
 
 ## C ABI
 

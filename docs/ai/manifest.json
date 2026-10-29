@@ -47,13 +47,12 @@
   "shm": {
     "implemented": "fixture-posix",
     "cli": false,
-    "platforms": ["linux", "macos", "freebsd"]
+    "platforms": ["linux", "macos"]
   },
   "performance": "docs/performance.md",
   "platforms": {
     "windows": "x86_64 CI; aarch64 cross-build only; shm unavailable",
     "linux": "x86_64 and aarch64 CI; fixture shm lane and fuzz gate",
-    "macos": "arm64 CI; fixture shm lane; fuzz not supported",
-    "freebsd": "aarch64 CI; fixture shm lane with ARROWLAND_SHM_DIR"
+    "macos": "arm64 CI; fixture shm lane; fuzz not supported"
   }
 }

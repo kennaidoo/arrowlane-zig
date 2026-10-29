@@ -180,7 +180,7 @@ with `name`, `length`, `crc32`, `token` and `offset`. The reader checks the
 token in constant time, checks the range with overflow guards, verifies CRC32,
 unlinks the segment and returns an owned payload.
 
-`arrowlane.shm_lane.isPosixTag(tag)`, `isPosix()` and `isReady()` report platform availability. The lane supports Linux, macOS and FreeBSD. Windows returns `error.LaneUnavailable` for segment operations. macOS and FreeBSD need `ARROWLAND_SHM_DIR`. The lane is not wired to a `pack --lane shm` CLI command yet.
+`arrowlane.shm_lane.isPosixTag(tag)`, `isPosix()` and `isReady()` report platform availability. The lane supports Linux and macOS. Windows returns `error.LaneUnavailable` for segment operations. macOS needs `ARROWLAND_SHM_DIR`. The lane is not wired to a `pack --lane shm` CLI command yet.
 
 ## Benchmark and fuzz
 
@@ -193,7 +193,7 @@ implementation that wins those lanes.
 `zig build fuzz` runs a deterministic 10,000-input mutation gate over the
 frame, shm descriptor and general schema parsers on Linux. Zig 0.17's
 coverage-guided runner is not used because it crashes in `fuzzer_new_input`
-before the target runs. Windows, macOS and FreeBSD do not support Zig 0.17 fuzz mode.
+before the target runs. Windows and macOS do not support Zig 0.17 fuzz mode.
 
 ## Not implemented
 

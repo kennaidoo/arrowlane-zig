@@ -18,7 +18,7 @@ IPC spike, fixture chunk streams, selector, C ABI, POSIX shm fixture lane,
 `bench`, parser fuzz targets and `describe`.
 
 Not implemented: general JSON lane, general IPC lane, general record batch
-codec. The shm lane is POSIX only on Linux, macOS and FreeBSD, and has no CLI
+codec. The shm lane is POSIX only on Linux and macOS, and has no CLI
 command.
 
 The manifest reports `"shm":"fixture-posix"` and marks the general record paths

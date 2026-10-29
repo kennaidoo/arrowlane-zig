@@ -56,7 +56,7 @@ zig build -Doptimize=ReleaseSafe
 | C ABI | Done, fixture scoped | Python ctypes checks version, select, inspect all lanes, repack and safe frees |
 | General schema codec | Done, common types | Reader and writer for null, int, float, binary, large binary, utf8, large utf8, bool, decimal, date, time, timestamp and duration; pyarrow reads the fixture and one-field schemas |
 | Deterministic selector | Done | 324 of 324 Python selector cases agree on lane and reason |
-| POSIX `shm` fixture lane | Done, POSIX only | Descriptor validation, checked range arithmetic, token check, CRC and segment cleanup; Windows reports unavailable; FreeBSD needs `ARROWLAND_SHM_DIR` |
+| POSIX `shm` fixture lane | Done, POSIX only | Descriptor validation, checked range arithmetic, token check, CRC and segment cleanup; Windows reports unavailable |
 | `bench` command | Done | Median and spread for json, ipc and ipc-zstd; see `docs/performance.md` |
 | Fuzz targets | Linux | Deterministic 10,000-input mutation gate over frame, shm and schema parsers; Zig 0.17 coverage-guided runner is not used |
 | `describe` | Done | Machine-readable JSON with honest capability flags |
@@ -73,7 +73,6 @@ zig build -Doptimize=ReleaseSafe
 | macOS arm64 | CI test |
 | Windows x86_64 | CI test |
 | Windows aarch64 | Cross-build only |
-| FreeBSD 15 aarch64 | CI test |
 
 ## Frame layout
 
