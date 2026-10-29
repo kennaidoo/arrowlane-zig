@@ -4,6 +4,7 @@
 
 ## Start here
 
+- [AGENTS.md](AGENTS.md): short command card for coding agents.
 - [README.md](README.md): build, status and frame layout.
 - [docs/ai/manifest.json](docs/ai/manifest.json): machine-readable capabilities and limits.
 - [docs/ai/quickstart.md](docs/ai/quickstart.md): build and first command.

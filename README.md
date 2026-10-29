@@ -152,7 +152,9 @@ Arrow table wire compatibility.
 - `zig build -Doptimize=ReleaseSafe`
 - `bash scripts/gate.sh` runs the same checks and records the binary size.
 
-The agent surface is `llms.txt` and `docs/ai/`. There is no root `AGENTS.md`.
+The agent surface is `llms.txt`, `docs/ai/` and the root `AGENTS.md`. Read
+`AGENTS.md` for the command card and `CONTRIBUTING.md` for the contribution
+process.
 
 ## License
 
