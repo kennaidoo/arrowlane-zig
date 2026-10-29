@@ -156,6 +156,10 @@ The agent surface is `llms.txt`, `docs/ai/` and the root `AGENTS.md`. Read
 `AGENTS.md` for the command card and `CONTRIBUTING.md` for the contribution
 process.
 
+## Status
+
+Alpha source preview. No release artifacts yet. The API may change.
+
 ## License
 
 Apache License 2.0. See `LICENSE`.
