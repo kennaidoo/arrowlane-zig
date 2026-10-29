@@ -75,7 +75,7 @@ jobs:
           arch: aarch64
           mem: 8192
           prepare: |
-            pkg install -y bash curl xz
+            pkg install -y bash curl
           run: |
             export ARROWLAND_SHM_DIR=/tmp/arrowlane-shm
             mkdir -p "$ARROWLAND_SHM_DIR"
