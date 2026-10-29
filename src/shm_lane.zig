@@ -154,8 +154,15 @@ pub fn validateRange(descriptor: Descriptor, file_size: u64) Error!struct { offs
     return .{ .offset = offset, .length = length };
 }
 
+pub fn isPosixTag(tag: std.Target.Os.Tag) bool {
+    return switch (tag) {
+        .linux, .macos, .freebsd => true,
+        else => false,
+    };
+}
+
 pub fn isPosix() bool {
-    return builtin.os.tag == .linux or builtin.os.tag == .macos;
+    return isPosixTag(builtin.os.tag);
 }
 
 pub fn isReady() bool {
@@ -358,4 +365,12 @@ test "shm posix segment roundtrip and wrong token rejection" {
     const summary = try decodeFixtureFrame(allocator, io, "/tmp", "token-0123456789", wire);
     try std.testing.expectEqual(@as(u64, 7), summary.rows);
     try std.testing.expectEqualStrings("shm", summary.lane);
+}
+
+test "posix platform tags include FreeBSD and reject NetBSD" {
+    try std.testing.expect(isPosixTag(.linux));
+    try std.testing.expect(isPosixTag(.macos));
+    try std.testing.expect(isPosixTag(.freebsd));
+    try std.testing.expect(!isPosixTag(.netbsd));
+    try std.testing.expect(!isPosixTag(.windows));
 }
