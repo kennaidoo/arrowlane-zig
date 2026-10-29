@@ -18,7 +18,8 @@ IPC spike, fixture chunk streams, selector, C ABI, POSIX shm fixture lane,
 `bench`, parser fuzz targets and `describe`.
 
 Not implemented: general JSON lane, general IPC lane, general record batch
-codec. The shm lane is POSIX only and has no CLI command.
+codec. The shm lane is POSIX only on Linux, macOS and FreeBSD, and has no CLI
+command.
 
 The manifest reports `"shm":"fixture-posix"` and marks the general record paths
 as fixture scoped. Do not treat the fixture path as a general Arrow table codec.
@@ -28,7 +29,7 @@ as fixture scoped. Do not treat the fixture path as a general Arrow table codec.
 - `zig build`
 - `zig build test`
 - `zig build -Doptimize=ReleaseSafe`
-- `zig build fuzz` on Linux x86_64 only: deterministic 10,000-input mutation
+- `zig build fuzz` on Linux only: deterministic 10,000-input mutation
   gate over frame, shm descriptor and schema parsers
 - `bash scripts/gate.sh`
 - `zig-out/bin/arrowlane-zig describe`
