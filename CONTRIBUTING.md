@@ -5,27 +5,21 @@ implementations live in separate repositories.
 
 ## Before you start
 
-- Open an issue for behaviour changes, new lanes, or wire-format changes.
-- Keep a change small and focused. One concern per pull request.
+- Open an issue for behaviour, wire-format or platform changes.
+- Keep one concern per pull request.
+- Include a test for logic changes, or state why no test is needed.
 - Do not change a lane id. Add a new id instead.
 - Do not use `[*c]` outside `src/vendor/`.
-- Do not publish a performance claim without a reproducible measurement.
 
-## Local checks
+## AI-assisted work
 
-```bash
-bash tools/fetch-zstd.sh
-zig build test
-bash scripts/gate.sh
-zig build -Doptimize=ReleaseSafe
-```
+Disclose the tool and the extent of the assistance. You must understand the
+code you submit. Low-effort generated changes will be closed.
 
-A change is complete only when `bash scripts/gate.sh` passes.
+## Review
 
-## Documentation
-
-Update the page that describes the behaviour you changed. Keep `docs/ai/` and
-`llms.txt` accurate for agents.
+Review is best effort. There is no service-level agreement. A change is ready
+when the commands in AGENTS.md pass.
 
 ## Commit messages
 
@@ -37,4 +31,4 @@ fix(frame): reject a truncated payload before allocation
 
 ## Security
 
-Do not report a vulnerability in a public issue. Follow `SECURITY.md`.
+Do not report a vulnerability in a public issue. Follow SECURITY.md.
