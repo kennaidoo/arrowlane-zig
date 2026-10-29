@@ -178,14 +178,31 @@ fn schemaBytes(allocator: std.mem.Allocator) Error![]u8 {
     };
 }
 
+fn writeDecimal(out: []u8, value: usize) usize {
+    var buffer: [20]u8 = undefined;
+    var cursor = buffer.len;
+    var remaining = value;
+    if (remaining == 0) {
+        out[0] = '0';
+        return 1;
+    }
+    while (remaining > 0) {
+        cursor -= 1;
+        buffer[cursor] = '0' + @as(u8, @intCast(remaining % 10));
+        remaining /= 10;
+    }
+    const count = buffer.len - cursor;
+    @memcpy(out[0..count], buffer[cursor..]);
+    return count;
+}
+
 fn writeNameData(body: []u8, body_offset: usize, row_start: usize, rows: usize) void {
     var offset: usize = 0;
-    var buffer: [32]u8 = undefined;
     for (row_start..row_start + rows) |index| {
         if (index % 7 == 0) continue;
-        const text = std.fmt.bufPrint(&buffer, "row-{d}", .{index}) catch unreachable;
-        @memcpy(body[body_offset + offset .. body_offset + offset + text.len], text);
-        offset += text.len;
+        @memcpy(body[body_offset + offset ..][0..4], "row-");
+        offset += 4;
+        offset += writeDecimal(body[body_offset + offset ..], index);
     }
 }
 
@@ -430,4 +447,14 @@ test "fixture ipc frame round trip shape" {
     defer allocator.free(wire);
     const summary = try decodeFrame(allocator, wire);
     try std.testing.expectEqual(@as(u64, 500), summary.rows);
+}
+
+test "decimal writer covers zero, single digit and multiple digits" {
+    var buffer: [20]u8 = undefined;
+    try std.testing.expectEqual(@as(usize, 1), writeDecimal(&buffer, 0));
+    try std.testing.expectEqualStrings("0", buffer[0..1]);
+    try std.testing.expectEqual(@as(usize, 1), writeDecimal(&buffer, 7));
+    try std.testing.expectEqualStrings("7", buffer[0..1]);
+    try std.testing.expectEqual(@as(usize, 3), writeDecimal(&buffer, 123));
+    try std.testing.expectEqualStrings("123", buffer[0..3]);
 }

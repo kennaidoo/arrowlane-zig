@@ -7,7 +7,7 @@ fi
 
 zig fmt --check --exclude src/vendor .
 zig build test
-zig build -Doptimize=ReleaseSafe
+zig build -Doptimize=ReleaseSafe -Dstrip=true -Dc-abi=false
 
 binary="zig-out/bin/arrowlane-zig"
 if [[ -f "$binary.exe" ]]; then

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Decode `ipc-zstd` with libzstd instead of the Zig standard-library decoder.
+- Remove per-row formatting from the IPC name writer.
+- Add `-Dstrip` and `-Dc-abi` build options.
+- The benchmark image is a static stripped `scratch` image.
+
 ## 0.3.0
 
 - Add the 38 byte frame codec with checked prefix lengths, CRC32 and JSON header
@@ -12,7 +19,7 @@
 - Add the one-field int64 IPC spike, including its lane 2 frame wrapper.
 - Add the canonical eight-column IPC fixture with a 504 byte metadata template.
 - Add `pack --lane ipc` and fixture IPC validation.
-- Add the `ipc-zstd` fixture lane with libzstd encode and std decode.
+- Add the `ipc-zstd` fixture lane with libzstd encode and decode.
 - Add fixture chunk streams for json, ipc and ipc-zstd with ordered `chunk`
   metadata.
 - Add the general schema reader and writer for common Arrow types, including

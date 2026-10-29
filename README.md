@@ -21,9 +21,15 @@ zig build
 zig build test
 ```
 
-`tools/fetch-zstd.sh` downloads the pinned libzstd 1.5.7 tarball, verifies its
-SHA256 and copies `lib` into untracked `vendor/zstd`. The build needs that
-directory for the `ipc-zstd` encoder. The source tarball is not committed.
+The benchmark image uses a stripped CLI-only build:
+
+```bash
+zig build -Doptimize=ReleaseSafe -Dstrip=true -Dc-abi=false
+```
+
+`-Dc-abi=false` omits the shared and static C ABI libraries. The default build
+keeps them enabled. The `ipc-zstd` decoder now uses libzstd; the earlier Zig
+standard-library decoder was much slower.
 
 The release artifact is `zig-out/bin/arrowlane-zig` on POSIX and
 `zig-out/bin/arrowlane-zig.exe` on Windows.

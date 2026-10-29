@@ -42,6 +42,8 @@ fn addZstd(b: *std.Build, module: *std.Build.Module) void {
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const strip = b.option(bool, "strip", "Strip binary symbols") orelse false;
+    const c_abi = b.option(bool, "c-abi", "Build the C ABI shared and static libraries") orelse true;
 
     const library = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
@@ -59,26 +61,29 @@ pub fn build(b: *std.Build) void {
         }),
     });
     exe.root_module.addImport("arrowlane", library);
+    exe.root_module.strip = strip;
     b.installArtifact(exe);
 
-    const ffi_module = b.createModule(.{
-        .root_source_file = b.path("src/cabi.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    ffi_module.addImport("arrowlane", library);
-    const shared = b.addLibrary(.{
-        .name = "arrowlane_zig",
-        .linkage = .dynamic,
-        .root_module = ffi_module,
-    });
-    b.installArtifact(shared);
-    const static = b.addLibrary(.{
-        .name = "arrowlane_zig_static",
-        .linkage = .static,
-        .root_module = ffi_module,
-    });
-    b.installArtifact(static);
+    if (c_abi) {
+        const ffi_module = b.createModule(.{
+            .root_source_file = b.path("src/cabi.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        ffi_module.addImport("arrowlane", library);
+        const shared = b.addLibrary(.{
+            .name = "arrowlane_zig",
+            .linkage = .dynamic,
+            .root_module = ffi_module,
+        });
+        b.installArtifact(shared);
+        const static = b.addLibrary(.{
+            .name = "arrowlane_zig_static",
+            .linkage = .static,
+            .root_module = ffi_module,
+        });
+        b.installArtifact(static);
+    }
 
     const tests = b.addTest(.{
         .root_module = b.createModule(.{

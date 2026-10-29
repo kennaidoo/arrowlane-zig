@@ -27,15 +27,10 @@ pub const Summary = struct {
 };
 
 fn decompress(allocator: std.mem.Allocator, payload: []const u8, expected_len: usize) Error![]u8 {
-    var input = std.Io.Reader.fixed(payload);
-    var empty: [0]u8 = .{};
-    var decoder = std.compress.zstd.Decompress.init(&input, &empty, .{});
-    const output = decoder.reader.allocRemaining(allocator, .limited(@max(expected_len, 1))) catch return error.BadCompressed;
-    if (output.len != expected_len) {
-        allocator.free(output);
-        return error.BadCompressed;
-    }
-    return output;
+    return zstd.decompress(allocator, payload, expected_len) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.BadCompressed,
+    };
 }
 
 fn headerFor(allocator: std.mem.Allocator, chunk: ?frame.ChunkInfo) Error![]u8 {
@@ -67,6 +62,7 @@ pub fn encodeFrameRange(allocator: std.mem.Allocator, start: usize, rows: usize,
     const payload = zstd.compress(allocator, raw, level) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
         error.CompressFailed => return error.CompressFailed,
+        error.DecompressFailed => return error.CompressFailed,
     };
     defer allocator.free(payload);
     const header = try headerFor(allocator, chunk);

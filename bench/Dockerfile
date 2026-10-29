@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim AS build
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl jq xz-utils \
+ && apt-get install -y --no-install-recommends bash ca-certificates curl jq xz-utils \
  && rm -rf /var/lib/apt/lists/*
 
 ARG ZIG_VERSION=0.17.0
@@ -20,13 +20,17 @@ COPY src ./src
 COPY tools ./tools
 COPY include ./include
 COPY LICENSE ./
-RUN bash tools/fetch-zstd.sh \
- && zig build -Doptimize=ReleaseSafe
 
-FROM debian:bookworm-slim
+RUN --mount=type=cache,target=/src/.zig-cache \
+    --mount=type=cache,target=/src/vendor \
+    bash tools/fetch-zstd.sh \
+ && zig build -Doptimize=ReleaseSafe -Dstrip=true -Dc-abi=false \
+      -Dtarget=x86_64-linux-musl \
+ && mkdir -p /out \
+ && cp zig-out/bin/arrowlane-zig /out/arrowlane-zig
 
-RUN useradd --uid 65532 --no-create-home bench
-COPY --from=build /src/zig-out/bin/arrowlane-zig /usr/local/bin/arrowlane-zig
+FROM scratch
+
+COPY --from=build /out/arrowlane-zig /arrowlane-zig
 USER 65532
-
-ENTRYPOINT ["/usr/local/bin/arrowlane-zig"]
+ENTRYPOINT ["/arrowlane-zig"]
