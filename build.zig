@@ -100,6 +100,7 @@ pub fn build(b: *std.Build) void {
                 .optimize = .Debug,
                 .fuzz = true,
             }),
+            .filters = &.{"fuzz wire parsers"},
         });
         const fuzz_run = b.addRunArtifact(fuzz_tests);
         const fuzz_step = b.step("fuzz", "Coverage-guided parser fuzzing");
