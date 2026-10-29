@@ -34,3 +34,17 @@ jobs:
           version: 0.17.0
       - name: Fuzz parsers
         run: zig build fuzz
+
+  linux-arm64:
+    name: linux-arm64
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+      - run: bash tools/fetch-zstd.sh
+      - run: zig build test
+      - run: zig build fuzz
+      - run: zig build -Doptimize=ReleaseSafe
