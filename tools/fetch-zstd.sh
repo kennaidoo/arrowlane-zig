@@ -17,8 +17,17 @@ trap 'rm -rf "$tmp"' EXIT
 curl -L --fail --silent --show-error -o "$tmp/zstd.tar.gz" "$url"
 if command -v sha256sum >/dev/null 2>&1; then
   echo "$sha256  $tmp/zstd.tar.gz" | sha256sum -c -
-else
+elif command -v sha256 >/dev/null 2>&1; then
+  actual="$(sha256 -q "$tmp/zstd.tar.gz")"
+  if [[ "$actual" != "$sha256" ]]; then
+    echo "zstd checksum mismatch" >&2
+    exit 1
+  fi
+elif command -v shasum >/dev/null 2>&1; then
   echo "$sha256  $tmp/zstd.tar.gz" | shasum -a 256 -c -
+else
+  echo "no SHA-256 tool found" >&2
+  exit 1
 fi
 mkdir -p "$tmp/unpack"
 tar -xzf "$tmp/zstd.tar.gz" -C "$tmp/unpack" "zstd-${version}/lib"
