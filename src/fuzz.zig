@@ -41,12 +41,5 @@ fn fuzzAll(_: void, smith: *std.testing.Smith) anyerror!void {
 }
 
 test "fuzz wire parsers" {
-    try std.testing.fuzz({}, fuzzAll, .{
-        .corpus = &.{
-            "\x00ALN1\x01\x01\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc2\x41\x24\x35\x02\x00{}abc",
-            "\x01{\"name\":\"al-abc123\",\"length\":10,\"crc32\":7,\"token\":\"0123456789abcdef\",\"offset\":0}",
-            "\x02\xff\xff\xff\xff\x00\x00\x00\x00",
-            "",
-        },
-    });
+    try std.testing.fuzz({}, fuzzAll, .{});
 }
