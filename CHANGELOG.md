@@ -9,7 +9,7 @@
 - Decode `ipc-zstd` with libzstd instead of the Zig standard-library decoder.
 - Remove per-row formatting from the IPC name writer.
 - Add `-Dstrip` and `-Dc-abi` build options.
-- The benchmark image is a static stripped `scratch` image.
+- The security policy uses best-effort review without fixed-day targets.
 
 ## 0.3.0
 
